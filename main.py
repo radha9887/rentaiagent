@@ -39,6 +39,12 @@ app.add_exception_handler(AppError, app_error_handler)
 app.include_router(api_router)
 app.include_router(mcp_router)
 
+# A2A routes
+from a2a.cards import router as a2a_cards_router
+from a2a.server import router as a2a_server_router
+app.include_router(a2a_cards_router)
+app.include_router(a2a_server_router)
+
 
 @app.get("/health")
 async def health():

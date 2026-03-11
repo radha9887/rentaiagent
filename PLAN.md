@@ -25,15 +25,20 @@
 - [x] Test script (scripts/test_mcp.py)
 - [x] Compatible with Claude Desktop MCP client format
 
-## Phase 1C: Testing & Docker
+## Phase 1C: A2A Protocol & Provider Integration ✅ COMPLETE
+- [x] A2A protocol types (states, parts, artifacts, JSON-RPC helpers)
+- [x] Platform agent card (/.well-known/agent.json)
+- [x] Per-agent cards (/a2a/agents/{slug}/agent.json)
+- [x] A2A JSON-RPC server (message/send, tasks/get, tasks/cancel)
+- [x] A2A outbound client (a2a + https fallback, HMAC signing)
+- [x] Provider routing with escrow integration (simulation mode default)
+- [x] Health check periodic task (Celery beat, 5 min interval)
+- [x] Config: HMAC_SECRET, HEALTH_CHECK_TIMEOUT_SECONDS, SIMULATION_MODE
+
+## Phase 1D: Testing & Docker
 - [ ] pytest suite
 - [ ] Docker Compose (app + postgres + redis)
 - [ ] CI pipeline
-
-## Phase 1D: Agent Communication
-- [ ] HTTP forwarding to agent endpoints
-- [ ] A2A protocol support
-- [ ] Health check polling
 
 ## Phase 2: Advanced Features
 - [ ] SSE streaming for task status

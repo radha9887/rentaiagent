@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     PLATFORM_FEE_PERCENT: float = 15.0
     APP_NAME: str = "RentAnAgent"
     DEBUG: bool = False
+    HMAC_SECRET: str = "change-me-hmac-secret"
+    HEALTH_CHECK_TIMEOUT_SECONDS: int = 10
+    SIMULATION_MODE: bool = True
 
     model_config = {"env_prefix": "RAA_", "env_file": ".env"}
 

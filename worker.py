@@ -8,4 +8,13 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
+    beat_schedule={
+        "health-check-agents": {
+            "task": "check_all_agents_health",
+            "schedule": 300.0,  # every 5 minutes
+        },
+    },
 )
+
+# Register tasks
+import tasks.health  # noqa: F401
