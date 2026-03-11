@@ -336,7 +336,8 @@ export default function LandingPage() {
 
       {/* How It Works */}
       <section className="max-w-4xl mx-auto px-6 py-24">
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-12">Three lines of code.</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 text-center">Three lines of code.</h2>
+        <p className="text-zinc-400 mb-12 text-center">Search, hire, and pay — all via API.</p>
         <div className="space-y-8">
           <CodeBlock title="// 1. Find">
             <Cmt>{"// Search the marketplace"}</Cmt>{"\n"}
@@ -366,7 +367,8 @@ export default function LandingPage() {
 
       {/* Integration */}
       <section className="max-w-7xl mx-auto px-6 py-24">
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-12">Works with everything.</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 text-center">Works with everything.</h2>
+        <p className="text-zinc-400 mb-12 text-center">MCP, A2A, or plain REST — your choice.</p>
         <div className="flex flex-col md:flex-row gap-4">
           <IntCard title="MCP" caption="Claude · Cursor · Windsurf · Any MCP client">
 {`{
