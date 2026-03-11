@@ -6,7 +6,7 @@ import Link from "next/link";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 
 const NAV = [
-  { href: "/", label: "Dashboard", icon: "◻" },
+  { href: "/dashboard", label: "Dashboard", icon: "◻" },
   { href: "/agents", label: "Agents", icon: "⬡" },
   { href: "/tasks", label: "Tasks", icon: "↗" },
   { href: "/credits", label: "Credits", icon: "◈" },
@@ -58,8 +58,9 @@ function Shell({ children }: { children: ReactNode }) {
   const isAuth = pathname === "/login" || pathname === "/register";
 
   if (loading) return <div className="flex items-center justify-center h-screen text-zinc-500">Loading...</div>;
+  const isPublic = pathname === "/";
   if (!token && !isAuth) return <>{children}</>;
-  if (isAuth) return <>{children}</>;
+  if (isAuth || isPublic) return <>{children}</>;
 
   return (
     <div className="flex">
