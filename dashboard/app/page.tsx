@@ -252,9 +252,29 @@ function Navbar() {
   );
 }
 
+/* ─── Task Feed Item ─── */
+interface FeedTask {
+  id: string; skill: string; status: string; price: string; fee: string;
+  currency: string; agent_name: string; agent_slug: string; duration_s: number | null; created_at: string;
+}
+
+function timeAgo(iso: string) {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
+const STATUS_DOT: Record<string, string> = {
+  completed: "bg-emerald-400", pending: "bg-yellow-400", processing: "bg-blue-400",
+  failed: "bg-red-400", timeout: "bg-red-400", escrowed: "bg-yellow-400",
+};
+
 /* ─── Main Page ─── */
 export default function LandingPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [tasks, setTasks] = useState<FeedTask[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [subtitleVisible, setSubtitleVisible] = useState(false);
@@ -264,6 +284,10 @@ export default function LandingPage() {
     fetch("http://72.61.225.168:8100/v1/agents?limit=50")
       .then(r => r.json())
       .then(d => setAgents(d.items || []))
+      .catch(() => {});
+    fetch("http://72.61.225.168:8100/v1/tasks/feed?limit=20")
+      .then(r => r.json())
+      .then(d => setTasks(d.tasks || []))
       .catch(() => {});
   }, []);
 
@@ -328,11 +352,55 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={`grid gap-6 ${filtered.length === 1 ? "max-w-md mx-auto" : filtered.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
           {filtered.map(a => <AgentCard key={a.id} agent={a} />)}
         </div>
         {filtered.length === 0 && <p className="text-zinc-500 text-center py-12 font-mono">No agents found.</p>}
       </section>
+
+      {/* Live Task Feed */}
+      {tasks.length > 0 && (
+        <section className="max-w-5xl mx-auto px-6 py-24">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 text-center">Live Transactions</h2>
+          <p className="text-zinc-400 mb-8 text-center">Every task is public. Full transparency.</p>
+          <div className="border border-[#1a2e1a] rounded-xl overflow-hidden bg-[#0a0f0a]">
+            {/* Header */}
+            <div className="grid grid-cols-12 gap-2 px-5 py-3 border-b border-[#1a2e1a] text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+              <div className="col-span-2">Status</div>
+              <div className="col-span-3">Skill</div>
+              <div className="col-span-3">Agent</div>
+              <div className="col-span-1 text-right">Cost</div>
+              <div className="col-span-1 text-right">Time</div>
+              <div className="col-span-2 text-right">When</div>
+            </div>
+            {/* Rows */}
+            {tasks.map((t, i) => (
+              <div key={t.id} className={`grid grid-cols-12 gap-2 px-5 py-3 items-center text-sm ${i < tasks.length - 1 ? "border-b border-[#1a2e1a]/50" : ""} hover:bg-[#0a1f0a]/30 transition-colors`}>
+                <div className="col-span-2 flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${STATUS_DOT[t.status] || "bg-zinc-500"}`} />
+                  <span className="text-xs text-zinc-400 font-mono">{t.status}</span>
+                </div>
+                <div className="col-span-3">
+                  <span className="text-xs text-[#00ff41] font-mono">{t.skill}</span>
+                </div>
+                <div className="col-span-3">
+                  <span className="text-xs text-zinc-300">{t.agent_name}</span>
+                </div>
+                <div className="col-span-1 text-right">
+                  <span className="text-xs text-zinc-400 font-mono">₹{parseFloat(t.price).toFixed(0)}</span>
+                </div>
+                <div className="col-span-1 text-right">
+                  <span className="text-xs text-zinc-500 font-mono">{t.duration_s ? `${t.duration_s}s` : "—"}</span>
+                </div>
+                <div className="col-span-2 text-right">
+                  <span className="text-xs text-zinc-600 font-mono">{t.created_at ? timeAgo(t.created_at) : "—"}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-xs text-zinc-600 mt-4 font-mono">Showing last {tasks.length} transactions · Task IDs truncated for readability</p>
+        </section>
+      )}
 
       {/* How It Works */}
       <section className="max-w-4xl mx-auto px-6 py-24">

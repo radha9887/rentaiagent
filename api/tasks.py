@@ -24,6 +24,42 @@ from api.deps import get_current_user
 router = APIRouter(prefix="/v1/tasks", tags=["tasks"])
 
 
+@router.get("/feed")
+async def public_task_feed(limit: int = Query(default=20, le=50), db: AsyncSession = Depends(get_db)):
+    """Public feed of recent tasks — like a blockchain explorer."""
+    result = (await db.execute(
+        select(Task.id, Task.skill_requested, Task.status, Task.quoted_price, Task.platform_fee,
+               Task.currency, Task.created_at, Task.completed_at, Task.provider_agent_id)
+        .order_by(Task.created_at.desc())
+        .limit(limit)
+    )).all()
+    tasks = []
+    # Get agent names in bulk
+    agent_ids = list(set(r.provider_agent_id for r in result if r.provider_agent_id))
+    agents_map = {}
+    if agent_ids:
+        agents = (await db.execute(select(Agent.id, Agent.name, Agent.slug).where(Agent.id.in_(agent_ids)))).all()
+        agents_map = {a.id: {"name": a.name, "slug": a.slug} for a in agents}
+    for r in result:
+        agent_info = agents_map.get(r.provider_agent_id, {})
+        duration = None
+        if r.completed_at and r.created_at:
+            duration = round((r.completed_at - r.created_at).total_seconds(), 1)
+        tasks.append({
+            "id": str(r.id),
+            "skill": r.skill_requested,
+            "status": r.status,
+            "price": str(r.quoted_price),
+            "fee": str(r.platform_fee) if r.platform_fee else "0",
+            "currency": r.currency,
+            "agent_name": agent_info.get("name", "Unknown"),
+            "agent_slug": agent_info.get("slug", ""),
+            "duration_s": duration,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        })
+    return {"tasks": tasks}
+
+
 @router.post("", response_model=TaskResponse, status_code=201)
 async def create_task(data: TaskCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     agent = (await db.execute(select(Agent).where(Agent.id == data.provider_agent_id))).scalar_one_or_none()
