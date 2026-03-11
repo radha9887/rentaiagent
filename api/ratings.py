@@ -33,12 +33,14 @@ async def submit_rating(data: RatingCreate, user: User = Depends(get_current_use
     if existing:
         raise ConflictError("Already rated this task")
 
+    rated_agent_id = data.rated_agent_id or task.provider_agent_id
+
     response_ms = None
     if task.escrowed_at and task.completed_at:
         response_ms = int((task.completed_at - task.escrowed_at).total_seconds() * 1000)
 
     rating = Rating(
-        task_id=data.task_id, rated_agent_id=data.rated_agent_id, rater_user_id=user.id,
+        task_id=data.task_id, rated_agent_id=rated_agent_id, rater_user_id=user.id,
         overall_score=data.overall_score, accuracy_score=data.accuracy_score,
         speed_score=data.speed_score, feedback=data.feedback,
         response_time_ms=response_ms, output_accepted=data.output_accepted,
@@ -46,14 +48,14 @@ async def submit_rating(data: RatingCreate, user: User = Depends(get_current_use
     db.add(rating)
 
     # Update agent stats
-    stats = (await db.execute(select(AgentStats).where(AgentStats.agent_id == data.rated_agent_id).with_for_update())).scalar_one_or_none()
+    stats = (await db.execute(select(AgentStats).where(AgentStats.agent_id == rated_agent_id).with_for_update())).scalar_one_or_none()
     if stats:
         stats.rating_count += 1
         stats.avg_rating = ((stats.avg_rating * (stats.rating_count - 1)) + data.overall_score) / stats.rating_count
         if response_ms:
             stats.avg_response_ms = ((stats.avg_response_ms * (stats.rating_count - 1)) + response_ms) / stats.rating_count
         # Update trust tier
-        agent = (await db.execute(select(Agent).where(Agent.id == data.rated_agent_id))).scalar_one()
+        agent = (await db.execute(select(Agent).where(Agent.id == rated_agent_id))).scalar_one()
         agent.trust_tier = calculate_trust_tier(stats)
 
     await db.commit()

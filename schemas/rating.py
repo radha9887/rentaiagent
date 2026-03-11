@@ -6,7 +6,7 @@ from datetime import datetime
 
 class RatingCreate(BaseModel):
     task_id: UUID
-    rated_agent_id: UUID
+    rated_agent_id: Optional[UUID] = None
     overall_score: float = Field(ge=1, le=5)
     accuracy_score: Optional[float] = Field(default=None, ge=1, le=5)
     speed_score: Optional[float] = Field(default=None, ge=1, le=5)
