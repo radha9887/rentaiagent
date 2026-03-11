@@ -46,6 +46,14 @@ async def register_agent(data: AgentCreate, user: User = Depends(get_current_use
     return agent
 
 
+@router.get("/me")
+async def my_agents(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = (await db.execute(
+        select(Agent).where(Agent.owner_id == user.id).order_by(Agent.created_at.desc())
+    )).scalars().all()
+    return {"agents": result}
+
+
 @router.get("", response_model=CursorPage[AgentListResponse])
 async def list_agents(
     skill: Optional[str] = None,

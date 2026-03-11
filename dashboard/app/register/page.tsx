@@ -19,7 +19,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const data = await register(email, password, displayName);
-      setApiKey(data.api_key || data.apiKey || "");
+      setApiKey(data.raw_key || data.api_key || "");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {

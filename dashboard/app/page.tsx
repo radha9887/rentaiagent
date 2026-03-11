@@ -40,8 +40,8 @@ function DashboardContent() {
         setData({
           totalAgents: agentList.length,
           activeTasks: taskList.filter((t: { status: string }) => ["pending", "assigned", "processing"].includes(t.status)).length,
-          balance: bal.balance || 0,
-          totalEarned: bal.total_earned || 0,
+          balance: parseFloat(bal.balance) || 0,
+          totalEarned: parseFloat(bal.total_earned) || 0,
           recentTasks: taskList.slice(0, 10),
         });
       } catch {

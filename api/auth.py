@@ -44,17 +44,22 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login")
 async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
     user = (await db.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
     if not user or not verify_password(data.password, user.password_hash):
         raise AuthError("Invalid credentials")
     if not user.is_active:
         raise AuthError("Account disabled")
-    return TokenResponse(
-        access_token=create_access_token(user.id, user.role),
-        refresh_token=create_refresh_token(user.id),
-    )
+    return {
+        "token": create_access_token(user.id, user.role),
+        "refresh_token": create_refresh_token(user.id),
+        "user": {
+            "id": str(user.id),
+            "email": user.email,
+            "display_name": user.display_name,
+        },
+    }
 
 
 @router.post("/api-keys", response_model=APIKeyCreated, status_code=201)
