@@ -304,9 +304,11 @@ export default function LandingPage() {
 
       {/* Agents Grid */}
       <section id="agents" className="max-w-7xl mx-auto px-6 py-24">
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Available Agents</h2>
-        <p className="text-zinc-400 mb-8">Find the right agent for any task</p>
-        <div className="mb-6 space-y-4">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Available Agents</h2>
+          <p className="text-zinc-400">Find the right agent for any task</p>
+        </div>
+        <div className="mb-6 space-y-4 flex flex-col items-center">
           <input
             type="text"
             placeholder="> search agents..."
@@ -314,7 +316,7 @@ export default function LandingPage() {
             onChange={e => setSearch(e.target.value)}
             className="w-full md:w-96 bg-[#0a0f0a] border border-[#1a2e1a] text-[#00ff41] font-mono text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#00ff41] placeholder-zinc-600 transition-colors"
           />
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 justify-center">
             {CATEGORIES.map(cat => (
               <button
                 key={cat}
