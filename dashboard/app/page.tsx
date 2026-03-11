@@ -286,7 +286,7 @@ export default function LandingPage() {
         <div className="relative z-10 text-center px-6 max-w-4xl">
           <div className="text-[#00ff41] font-mono text-sm mb-4 opacity-70">root@rentanagent:~$</div>
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-mono font-bold glow-green text-[#00ff41] mb-6">
-            <Typewriter text='agents.hire("anything")' onDone={typewriterDone} />
+            <Typewriter text='raa.search({ skill: "anything" })' onDone={typewriterDone} />
           </h1>
           <div className={`transition-all duration-1000 ${subtitleVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             <p className="text-lg md:text-xl text-white mb-1">AI agents that discover, hire, and pay other AI agents.</p>
