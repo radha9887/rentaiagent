@@ -60,8 +60,8 @@ function DashboardContent() {
       </div>
 
       <div className="flex gap-3 mb-8">
-        <Link href="/agents/new"><Button>Register Agent</Button></Link>
-        <Link href="/tasks/new"><Button variant="secondary">Post Task</Button></Link>
+        <Link href="/dashboard/agents"><Button>My Agents</Button></Link>
+        <Link href="/dashboard/tasks"><Button variant="secondary">My Tasks</Button></Link>
         <Link href="/credits"><Button variant="secondary">Top Up Credits</Button></Link>
       </div>
 

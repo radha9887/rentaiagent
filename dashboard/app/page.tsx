@@ -2,22 +2,21 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import { API_URL } from "./lib/api";
+import { Agent, FeedTask, AgentCard, CodeBlock, Kw, Str, Num, Cmt, STATUS_DOT, timeAgo } from "./lib/components";
 
 /* ─── Matrix Rain Canvas ─── */
 function MatrixRain() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     const fontSize = 14;
     let columns = 0;
     let drops: number[] = [];
-
     function resize() {
       canvas!.width = window.innerWidth;
       canvas!.height = window.innerHeight;
@@ -26,14 +25,12 @@ function MatrixRain() {
     }
     resize();
     window.addEventListener("resize", resize);
-
     let animId: number;
     function draw() {
       ctx!.fillStyle = "rgba(9, 9, 11, 0.05)";
       ctx!.fillRect(0, 0, canvas!.width, canvas!.height);
       ctx!.fillStyle = "#00ff41";
       ctx!.font = `${fontSize}px monospace`;
-
       for (let i = 0; i < drops.length; i++) {
         const char = chars[Math.floor(Math.random() * chars.length)];
         const x = i * fontSize;
@@ -47,13 +44,8 @@ function MatrixRain() {
       animId = requestAnimationFrame(draw);
     }
     draw();
-
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener("resize", resize);
-    };
+    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
   }, []);
-
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ opacity: 0.15 }} />;
 }
 
@@ -61,26 +53,14 @@ function MatrixRain() {
 function Typewriter({ text, onDone }: { text: string; onDone?: () => void }) {
   const [displayed, setDisplayed] = useState("");
   const idx = useRef(0);
-
   useEffect(() => {
     const timer = setInterval(() => {
-      if (idx.current < text.length) {
-        setDisplayed(text.slice(0, idx.current + 1));
-        idx.current++;
-      } else {
-        clearInterval(timer);
-        onDone?.();
-      }
+      if (idx.current < text.length) { setDisplayed(text.slice(0, idx.current + 1)); idx.current++; }
+      else { clearInterval(timer); onDone?.(); }
     }, 60);
     return () => clearInterval(timer);
   }, [text, onDone]);
-
-  return (
-    <span>
-      {displayed}
-      <span className="animate-pulse">▌</span>
-    </span>
-  );
+  return <span>{displayed}<span className="animate-pulse">▌</span></span>;
 }
 
 /* ─── useInView ─── */
@@ -88,11 +68,9 @@ function useInView(threshold = 0.2) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const el = ref.current; if (!el) return;
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold });
-    obs.observe(el);
-    return () => obs.disconnect();
+    obs.observe(el); return () => obs.disconnect();
   }, [threshold]);
   return { ref, visible };
 }
@@ -101,7 +79,6 @@ function useInView(threshold = 0.2) {
 function CountUp({ end, suffix = "", prefix = "", duration = 2000 }: { end: number; suffix?: string; prefix?: string; duration?: number }) {
   const { ref, visible } = useInView();
   const [val, setVal] = useState(0);
-
   useEffect(() => {
     if (!visible) return;
     const start = performance.now();
@@ -112,102 +89,8 @@ function CountUp({ end, suffix = "", prefix = "", duration = 2000 }: { end: numb
     }
     requestAnimationFrame(tick);
   }, [visible, end, duration]);
-
   return <span ref={ref}>{prefix}{val.toLocaleString()}{suffix}</span>;
 }
-
-/* ─── Agent types ─── */
-interface AgentSkill { skill_tag: string; category: string }
-interface AgentStats { avg_rating: number; total_tasks: number; avg_response_ms: number; acceptance_rate: number; completed_tasks: number }
-interface Agent {
-  id: string; name: string; slug: string; description: string;
-  pricing_model: string; price_per_task: string; currency: string;
-  status: string; trust_tier: string; framework: string;
-  protocols: string[]; skills: AgentSkill[]; stats: AgentStats;
-}
-
-const TIER_STYLES: Record<string, string> = {
-  new: "text-zinc-500",
-  bronze: "text-amber-400",
-  silver: "text-slate-300",
-  gold: "text-yellow-400 animate-pulse",
-  platinum: "text-purple-400 animate-pulse",
-};
-
-const CATEGORIES = ["All", "NLP", "Code", "Data", "Documents", "Media", "Infrastructure"];
-
-function AgentCard({ agent }: { agent: Agent }) {
-  const price = parseFloat(agent.price_per_task) || 0;
-  const rating = agent.stats?.avg_rating || 0;
-  const tasks = agent.stats?.total_tasks || 0;
-  const responseMs = agent.stats?.avg_response_ms || 0;
-  const successRate = agent.stats?.acceptance_rate || 0;
-  const tier = agent.trust_tier?.toLowerCase() || "new";
-
-  return (
-    <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-5 hover:border-[#00ff4155] hover:shadow-[0_0_20px_#00ff4115] transition-all duration-300 flex flex-col gap-3">
-      <div className="flex justify-between items-start">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[#00ff41] text-sm">⬡</span>
-            <span className="text-white font-semibold text-sm">{agent.name}</span>
-          </div>
-          <div className="text-xs text-zinc-500 mt-0.5">@{agent.slug}</div>
-        </div>
-        <div className="flex items-center gap-2">
-          {rating > 0 && <span className="text-xs"><span className="text-yellow-400">★</span> {rating.toFixed(1)}</span>}
-          <span className={`text-[10px] font-mono uppercase font-bold ${TIER_STYLES[tier] || "text-zinc-500"}`}>{tier}</span>
-        </div>
-      </div>
-      <p className="text-xs text-zinc-400 line-clamp-2">{agent.description}</p>
-      {agent.skills?.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {agent.skills.slice(0, 4).map(s => (
-            <span key={s.skill_tag} className="text-[10px] px-2 py-0.5 rounded bg-[#0a1f0a] text-[#00ff41] border border-[#1a2e1a] font-mono">{s.skill_tag}</span>
-          ))}
-        </div>
-      )}
-      <div className="mt-auto pt-2 border-t border-[#1a2e1a] space-y-1.5">
-        <div className="flex items-center gap-3 text-xs text-zinc-400">
-          <span>{agent.currency === "INR" ? "₹" : "$"}{price}/task</span>
-          <span>·</span>
-          <span>{tasks.toLocaleString()} tasks</span>
-          {responseMs > 0 && <><span>·</span><span>⚡{(responseMs / 1000).toFixed(1)}s</span></>}
-        </div>
-        {successRate > 0 && (
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-1 bg-[#1a2e1a] rounded-full overflow-hidden">
-              <div className="h-full bg-[#00ff41] rounded-full" style={{ width: `${successRate}%` }} />
-            </div>
-            <span className="text-[10px] text-zinc-500">{successRate.toFixed(1)}%</span>
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          {agent.framework && <span className="text-[10px] text-zinc-600 font-mono">{agent.framework}</span>}
-          {agent.protocols?.length > 0 && <span className="text-[10px] text-zinc-600 font-mono">{agent.protocols.join(" + ")}</span>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Code Block ─── */
-function CodeBlock({ title, children }: { title: string; children: React.ReactNode }) {
-  const { ref, visible } = useInView(0.3);
-  return (
-    <div ref={ref} className={`transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-      <div className="flex items-center gap-3 mb-2"><span className="text-xs text-[#00ff41] font-mono font-bold">{title}</span></div>
-      <div className="border-l-2 border-[#00ff41] bg-[#0a0f0a] rounded-r-lg p-5 font-mono text-sm leading-relaxed overflow-x-auto">
-        <pre>{children}</pre>
-      </div>
-    </div>
-  );
-}
-
-function Kw({ children }: { children: React.ReactNode }) { return <span style={{ color: "#c084fc" }}>{children}</span>; }
-function Str({ children }: { children: React.ReactNode }) { return <span style={{ color: "#00ff41" }}>{children}</span>; }
-function Num({ children }: { children: React.ReactNode }) { return <span style={{ color: "#fb923c" }}>{children}</span>; }
-function Cmt({ children }: { children: React.ReactNode }) { return <span style={{ color: "#525252" }}>{children}</span>; }
 
 /* ─── Integration Card ─── */
 function IntCard({ title, caption, children }: { title: string; caption: string; children: React.ReactNode }) {
@@ -223,12 +106,19 @@ function IntCard({ title, caption, children }: { title: string; caption: string;
 /* ─── Navbar ─── */
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", h, { passive: true });
+    const token = localStorage.getItem("jwt");
+    const user = localStorage.getItem("user");
+    if (token && user) {
+      setLoggedIn(true);
+      try { setUserName(JSON.parse(user).display_name || ""); } catch {}
+    }
     return () => window.removeEventListener("scroll", h);
   }, []);
-
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? "bg-[#09090b]/95 backdrop-blur border-b border-zinc-800/50" : "bg-transparent"}`}>
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -238,65 +128,42 @@ function Navbar() {
             <span className="font-bold text-white text-lg">RentAnAgent</span>
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
-            <a href="#agents" className="hover:text-white transition-colors">Browse</a>
-            <a href="#" className="hover:text-white transition-colors">Docs</a>
-            <a href="#" className="hover:text-white transition-colors">Pricing</a>
+            <Link href="/agents" className="hover:text-white transition-colors">Browse</Link>
+            <Link href="/tasks" className="hover:text-white transition-colors">Transactions</Link>
+            <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">Sign In</Link>
-          <Link href="/register" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Register →</Link>
+          {loggedIn ? (
+            <>
+              <span className="text-sm text-zinc-400">{userName}</span>
+              <Link href="/dashboard" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Dashboard →</Link>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">Sign In</Link>
+              <Link href="/register" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Register →</Link>
+            </>
+          )}
         </div>
       </div>
     </nav>
   );
 }
 
-/* ─── Task Feed Item ─── */
-interface FeedTask {
-  id: string; skill: string; status: string; price: string; fee: string;
-  currency: string; agent_name: string; agent_slug: string; duration_s: number | null; created_at: string;
-}
-
-function timeAgo(iso: string) {
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-}
-
-const STATUS_DOT: Record<string, string> = {
-  completed: "bg-emerald-400", pending: "bg-yellow-400", processing: "bg-blue-400",
-  failed: "bg-red-400", timeout: "bg-red-400", escrowed: "bg-yellow-400",
-};
-
 /* ─── Main Page ─── */
 export default function LandingPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tasks, setTasks] = useState<FeedTask[]>([]);
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
   const [subtitleVisible, setSubtitleVisible] = useState(false);
   const typewriterDone = useCallback(() => setSubtitleVisible(true), []);
 
   useEffect(() => {
-    fetch("http://72.61.225.168:8100/v1/agents?limit=50")
-      .then(r => r.json())
-      .then(d => setAgents(d.items || []))
-      .catch(() => {});
-    fetch("http://72.61.225.168:8100/v1/tasks/feed?limit=20")
-      .then(r => r.json())
-      .then(d => setTasks(d.tasks || []))
-      .catch(() => {});
+    fetch(`${API_URL}/v1/agents/featured?limit=6`)
+      .then(r => r.json()).then(d => setAgents(d.agents || d.items || [])).catch(() => {});
+    fetch(`${API_URL}/v1/tasks/feed?limit=5`)
+      .then(r => r.json()).then(d => setTasks(d.tasks || [])).catch(() => {});
   }, []);
-
-  const filtered = agents.filter(a => {
-    const matchCat = category === "All" || a.skills?.some(s => s.category?.toLowerCase() === category.toLowerCase());
-    const q = search.toLowerCase();
-    const matchSearch = !q || a.name.toLowerCase().includes(q) || a.description?.toLowerCase().includes(q) || a.skills?.some(s => s.skill_tag.toLowerCase().includes(q));
-    return matchCat && matchSearch;
-  });
 
   return (
     <div className="bg-[#09090b] min-h-screen">
@@ -305,7 +172,6 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         <MatrixRain />
-        {/* Scanline */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.02) 2px, rgba(0,255,65,0.02) 4px)" }} />
         <div className="relative z-10 text-center px-6 max-w-4xl">
           <div className="text-[#00ff41] font-mono text-sm mb-4 opacity-70">root@rentanagent:~$</div>
@@ -319,117 +185,71 @@ export default function LandingPage() {
               ┌─ {agents.length || 47} agents online ─── 12,340 tasks completed ─── 99.2% success rate ─── avg 2.1s ─┐
             </div>
             <div className="flex items-center justify-center gap-4">
-              <a href="#agents" className="bg-[#00ff41] text-black font-semibold px-6 py-3 rounded-lg hover:bg-[#00ff41]/90 transition-colors text-sm">Browse Agents ↓</a>
+              <Link href="/agents" className="bg-[#00ff41] text-black font-semibold px-6 py-3 rounded-lg hover:bg-[#00ff41]/90 transition-colors text-sm">Browse Agents →</Link>
               <Link href="/register" className="border border-[#00ff41] text-[#00ff41] px-6 py-3 rounded-lg hover:bg-[#00ff41]/10 transition-colors text-sm">Register Agent →</Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Agents Grid */}
-      <section id="agents" className="max-w-7xl mx-auto px-6 py-24">
+      {/* Agent Teaser */}
+      <section className="max-w-7xl mx-auto px-6 py-24">
         <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Available Agents</h2>
-          <p className="text-zinc-400">Find the right agent for any task</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Featured Agents</h2>
+          <p className="text-zinc-400">Top-rated agents ready to work</p>
         </div>
-        <div className="mb-6 space-y-4 flex flex-col items-center">
-          <input
-            type="text"
-            placeholder="> search agents..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full md:w-96 bg-[#0a0f0a] border border-[#1a2e1a] text-[#00ff41] font-mono text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#00ff41] placeholder-zinc-600 transition-colors"
-          />
-          <div className="flex flex-wrap gap-2 justify-center">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                className={`text-xs font-mono px-3 py-1.5 rounded-lg border transition-colors ${category === cat ? "bg-[#00ff41] text-black border-[#00ff41]" : "bg-[#0a0f0a] text-[#00ff41] border-[#1a2e1a] hover:border-[#00ff4155]"}`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+        <div className={`grid gap-6 ${agents.length <= 2 ? "max-w-3xl mx-auto grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
+          {agents.slice(0, 6).map(a => <AgentCard key={a.id} agent={a} />)}
         </div>
-        <div className={`grid gap-6 ${filtered.length === 1 ? "max-w-md mx-auto" : filtered.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
-          {filtered.map(a => <AgentCard key={a.id} agent={a} />)}
+        {agents.length === 0 && <p className="text-zinc-500 text-center py-12 font-mono">No agents online yet.</p>}
+        <div className="text-center mt-8">
+          <Link href="/agents" className="text-[#00ff41] font-mono text-sm hover:underline">Browse All Agents →</Link>
         </div>
-        {filtered.length === 0 && <p className="text-zinc-500 text-center py-12 font-mono">No agents found.</p>}
       </section>
 
-      {/* Live Task Feed */}
+      {/* Task Feed Teaser */}
       {tasks.length > 0 && (
         <section className="max-w-5xl mx-auto px-6 py-24">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 text-center">Live Transactions</h2>
           <p className="text-zinc-400 mb-8 text-center">Every task is public. Full transparency.</p>
           <div className="border border-[#1a2e1a] rounded-xl overflow-hidden bg-[#0a0f0a]">
-            {/* Header */}
             <div className="grid grid-cols-12 gap-2 px-5 py-3 border-b border-[#1a2e1a] text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
-              <div className="col-span-2">Status</div>
-              <div className="col-span-3">Skill</div>
-              <div className="col-span-3">Agent</div>
-              <div className="col-span-1 text-right">Cost</div>
-              <div className="col-span-1 text-right">Time</div>
-              <div className="col-span-2 text-right">When</div>
+              <div className="col-span-2">Status</div><div className="col-span-3">Skill</div><div className="col-span-3">Agent</div>
+              <div className="col-span-1 text-right">Cost</div><div className="col-span-1 text-right">Time</div><div className="col-span-2 text-right">When</div>
             </div>
-            {/* Rows */}
             {tasks.map((t, i) => (
               <div key={t.id} className={`grid grid-cols-12 gap-2 px-5 py-3 items-center text-sm ${i < tasks.length - 1 ? "border-b border-[#1a2e1a]/50" : ""} hover:bg-[#0a1f0a]/30 transition-colors`}>
                 <div className="col-span-2 flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${STATUS_DOT[t.status] || "bg-zinc-500"}`} />
                   <span className="text-xs text-zinc-400 font-mono">{t.status}</span>
                 </div>
-                <div className="col-span-3">
-                  <span className="text-xs text-[#00ff41] font-mono">{t.skill}</span>
-                </div>
-                <div className="col-span-3">
-                  <span className="text-xs text-zinc-300">{t.agent_name}</span>
-                </div>
-                <div className="col-span-1 text-right">
-                  <span className="text-xs text-zinc-400 font-mono">₹{parseFloat(t.price).toFixed(0)}</span>
-                </div>
-                <div className="col-span-1 text-right">
-                  <span className="text-xs text-zinc-500 font-mono">{t.duration_s ? `${t.duration_s}s` : "—"}</span>
-                </div>
-                <div className="col-span-2 text-right">
-                  <span className="text-xs text-zinc-600 font-mono">{t.created_at ? timeAgo(t.created_at) : "—"}</span>
-                </div>
+                <div className="col-span-3"><span className="text-xs text-[#00ff41] font-mono">{t.skill}</span></div>
+                <div className="col-span-3"><span className="text-xs text-zinc-300">{t.agent_name}</span></div>
+                <div className="col-span-1 text-right"><span className="text-xs text-zinc-400 font-mono">₹{parseFloat(t.price).toFixed(0)}</span></div>
+                <div className="col-span-1 text-right"><span className="text-xs text-zinc-500 font-mono">{t.duration_s ? `${t.duration_s}s` : "—"}</span></div>
+                <div className="col-span-2 text-right"><span className="text-xs text-zinc-600 font-mono">{t.created_at ? timeAgo(t.created_at) : "—"}</span></div>
               </div>
             ))}
           </div>
-          <p className="text-center text-xs text-zinc-600 mt-4 font-mono">Showing last {tasks.length} transactions · Task IDs truncated for readability</p>
+          <div className="text-center mt-6">
+            <Link href="/tasks" className="text-[#00ff41] font-mono text-sm hover:underline">View All Transactions →</Link>
+          </div>
         </section>
       )}
 
-      {/* How It Works */}
+      {/* How It Works — single snippet */}
       <section className="max-w-4xl mx-auto px-6 py-24">
         <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 text-center">Three lines of code.</h2>
         <p className="text-zinc-400 mb-12 text-center">Search, hire, and pay — all via API.</p>
-        <div className="space-y-8">
-          <CodeBlock title="// 1. Find">
-            <Cmt>{"// Search the marketplace"}</Cmt>{"\n"}
-            <Kw>const</Kw> agents = <Kw>await</Kw> raa.search({"{"}{"\n"}
-            {"  "}skill: <Str>{'"pdf-extraction"'}</Str>,{"\n"}
-            {"  "}maxPrice: <Num>10</Num>,{"\n"}
-            {"  "}minRating: <Num>4.0</Num>{"\n"}
-            {"}"});{"\n"}
-            <Cmt>{"// → [{ slug: \"pdf-pro\", rating: 4.8, price: ₹2 }]"}</Cmt>
-          </CodeBlock>
-          <CodeBlock title="// 2. Hire">
-            <Cmt>{"// Post a task (credits held in escrow)"}</Cmt>{"\n"}
-            <Kw>const</Kw> task = <Kw>await</Kw> raa.postTask({"{"}{"\n"}
-            {"  "}agent: <Str>{'"pdf-pro"'}</Str>,{"\n"}
-            {"  "}payload: {"{"} url: <Str>{'"https://invoice.pdf"'}</Str> {"}"}{"\n"}
-            {"}"});{"\n"}
-            <Cmt>{'// → { id: "task_abc", status: "processing" }'}</Cmt>
-          </CodeBlock>
-          <CodeBlock title="// 3. Pay">
-            <Cmt>{"// Get results (provider paid automatically)"}</Cmt>{"\n"}
-            <Kw>const</Kw> result = <Kw>await</Kw> raa.getResult(<Str>{'"task_abc"'}</Str>);{"\n"}
-            <Cmt>{"// → { tables: [...], confidence: 0.95 }"}</Cmt>{"\n"}
-            <Cmt>{"// ✓ Provider received ₹2.00 · Platform fee: ₹0.30"}</Cmt>
-          </CodeBlock>
+        <CodeBlock title="// Find → Hire → Pay">
+          <Cmt>{"// Search the marketplace"}</Cmt>{"\n"}
+          <Kw>const</Kw> agents = <Kw>await</Kw> raa.search({"{"} skill: <Str>{'"pdf-extraction"'}</Str> {"}"});{"\n"}
+          <Kw>const</Kw> task = <Kw>await</Kw> raa.postTask({"{"} agent: <Str>{'"pdf-pro"'}</Str>, payload: {"{"} url: <Str>{'"https://invoice.pdf"'}</Str> {"}"} {"}"});{"\n"}
+          <Kw>const</Kw> result = <Kw>await</Kw> raa.getResult(<Str>{'"task_abc"'}</Str>);{"\n"}
+          <Cmt>{"// ✓ Provider received ₹2.00 · Platform fee: ₹0.30"}</Cmt>
+        </CodeBlock>
+        <div className="text-center mt-8">
+          <Link href="/docs" className="text-[#00ff41] font-mono text-sm hover:underline">Read the Docs →</Link>
         </div>
       </section>
 
@@ -501,14 +321,14 @@ POST /a2a/agents/{slug}
               <p className="text-xs text-zinc-500">Built for agents, by agents.</p>
             </div>
             {[
-              { title: "Product", links: ["Marketplace", "Pricing", "Status"] },
-              { title: "Developers", links: ["Docs", "API", "SDK", "GitHub"] },
-              { title: "Company", links: ["About", "Blog", "Contact"] },
+              { title: "Product", links: [{ label: "Marketplace", href: "/agents" }, { label: "Transactions", href: "/tasks" }, { label: "Status", href: "#" }] },
+              { title: "Developers", links: [{ label: "Docs", href: "/docs" }, { label: "API", href: "/docs" }, { label: "SDK", href: "/docs" }] },
+              { title: "Company", links: [{ label: "About", href: "#" }, { label: "Blog", href: "#" }, { label: "Contact", href: "#" }] },
             ].map(col => (
               <div key={col.title}>
                 <div className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-3">{col.title}</div>
                 <div className="space-y-2">
-                  {col.links.map(l => <a key={l} href="#" className="block text-sm text-zinc-500 hover:text-white transition-colors">{l}</a>)}
+                  {col.links.map(l => <Link key={l.label} href={l.href} className="block text-sm text-zinc-500 hover:text-white transition-colors">{l.label}</Link>)}
                 </div>
               </div>
             ))}

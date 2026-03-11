@@ -1,4 +1,13 @@
-const API_URL = "http://72.61.225.168:8100";
+export const API_URL = "http://72.61.225.168:8100";
+
+export async function publicFetch(path: string, options: RequestInit = {}) {
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...options.headers },
+  });
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  return res.json();
+}
 
 export class AuthError extends Error {
   constructor() {

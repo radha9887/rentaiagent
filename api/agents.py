@@ -54,6 +54,20 @@ async def my_agents(user: User = Depends(get_current_user), db: AsyncSession = D
     return {"agents": result}
 
 
+@router.get("/featured")
+async def featured_agents(limit: int = Query(default=6, le=20), db: AsyncSession = Depends(get_db)):
+    """Public endpoint: top agents by rating, online only."""
+    query = (
+        select(Agent)
+        .outerjoin(AgentStats, AgentStats.agent_id == Agent.id)
+        .where(Agent.status == "online")
+        .order_by(AgentStats.avg_rating.desc().nulls_last(), Agent.created_at.desc())
+        .limit(limit)
+    )
+    result = (await db.execute(query)).scalars().all()
+    return {"agents": result}
+
+
 @router.get("", response_model=CursorPage[AgentListResponse])
 async def list_agents(
     skill: Optional[str] = None,

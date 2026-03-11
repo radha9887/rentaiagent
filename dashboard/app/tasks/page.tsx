@@ -2,98 +2,97 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ProtectedRoute } from "../lib/auth-context";
-import { getTasks } from "../lib/api";
-import { Card, StatusBadge, Button } from "../lib/ui";
+import { API_URL } from "../lib/api";
+import { FeedTask, STATUS_DOT, timeAgo } from "../lib/components";
 
-type Task = {
-  id: string; skill_requested: string; status: string; quoted_price: string;
-  provider_agent_id?: string; created_at: string; description?: string;
-};
+const STATUSES = ["all", "completed", "pending", "processing", "failed", "cancelled", "escrowed"];
 
-const TABS = ["all", "requester", "provider"] as const;
-const STATUSES = ["all", "pending", "assigned", "processing", "completed", "failed", "cancelled"];
-
-function TasksContent() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [tab, setTab] = useState<string>("all");
-  const [status, setStatus] = useState("all");
+export default function TransactionExplorer() {
+  const [tasks, setTasks] = useState<FeedTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [skillFilter, setSkillFilter] = useState("");
 
   useEffect(() => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (tab !== "all") params.set("role", tab);
-    if (status !== "all") params.set("status", status);
-    getTasks(params.toString())
-      .then((d) => {
-        const items = d.items || d.tasks || (Array.isArray(d) ? d : []);
-        setTasks(items);
-      })
-      .catch(() => setTasks([]))
+    fetch(`${API_URL}/v1/tasks/feed?limit=50`)
+      .then(r => r.json())
+      .then(d => setTasks(d.tasks || []))
+      .catch(() => {})
       .finally(() => setLoading(false));
-  }, [tab, status]);
+  }, []);
+
+  const filtered = tasks.filter(t => {
+    if (statusFilter !== "all" && t.status !== statusFilter) return false;
+    if (skillFilter && !t.skill?.toLowerCase().includes(skillFilter.toLowerCase())) return false;
+    return true;
+  });
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Tasks</h1>
-        <Link href="/tasks/new"><Button>Post Task</Button></Link>
-      </div>
-      <div className="flex items-center gap-6 mb-6">
-        <div className="flex gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800">
-          {TABS.map((t) => (
-            <button key={t} onClick={() => setTab(t)}
-              className={`px-3 py-1.5 rounded-md text-sm capitalize transition-colors ${tab === t ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-white"}`}>
-              {t === "all" ? "All" : `As ${t}`}
-            </button>
-          ))}
-        </div>
-        <select value={status} onChange={(e) => setStatus(e.target.value)}
-          className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-white">
-          {STATUSES.map((s) => <option key={s} value={s}>{s === "all" ? "All statuses" : s}</option>)}
-        </select>
-      </div>
-      {loading ? <p className="text-zinc-500">Loading...</p> : tasks.length === 0 ? (
-        <Card>
-          <div className="text-center py-8">
-            <p className="text-zinc-400 mb-2">No tasks found</p>
-            <p className="text-zinc-500 text-sm mb-4">Post a task to an agent to get started</p>
-            <Link href="/tasks/new"><Button>Post Task</Button></Link>
+    <div className="bg-[#09090b] min-h-screen">
+      <nav className="border-b border-zinc-800/50 bg-[#09090b]/95 backdrop-blur sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-[#00ff41] text-xl">⬡</span>
+              <span className="font-bold text-white text-lg">RentAnAgent</span>
+            </Link>
+            <div className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
+              <Link href="/agents" className="hover:text-white transition-colors">Browse</Link>
+              <Link href="/tasks" className="text-white">Transactions</Link>
+              <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
+            </div>
           </div>
-        </Card>
-      ) : (
-        <Card className="!p-0 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-800 text-left text-xs text-zinc-500">
-                <th className="px-4 py-3">Skill</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map((t) => (
-                <tr key={t.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <Link href={`/tasks/${t.id}`} className="text-sm text-white hover:underline">{t.skill_requested || "—"}</Link>
-                  </td>
-                  <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
-                  <td className="px-4 py-3 text-sm text-zinc-300">₹{parseFloat(t.quoted_price || "0").toFixed(2)}</td>
-                  <td className="px-4 py-3 text-xs text-zinc-500">{new Date(t.created_at).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 text-xs text-zinc-500 font-mono">{t.id?.slice(0, 8)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
+          <div className="flex items-center gap-3">
+            <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">Sign In</Link>
+            <Link href="/register" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Register →</Link>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-6xl mx-auto px-6 py-16">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Transaction Explorer</h1>
+          <p className="text-zinc-400">Every task is public. Full transparency.</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 mb-6 justify-center">
+          <input
+            type="text" placeholder="> filter by skill..." value={skillFilter} onChange={e => setSkillFilter(e.target.value)}
+            className="bg-[#0a0f0a] border border-[#1a2e1a] text-[#00ff41] font-mono text-sm rounded-lg px-4 py-2 focus:outline-none focus:border-[#00ff41] placeholder-zinc-600 w-64"
+          />
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+            className="bg-[#0a0f0a] border border-[#1a2e1a] text-[#00ff41] font-mono text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#00ff41]">
+            {STATUSES.map(s => <option key={s} value={s}>{s === "all" ? "All statuses" : s}</option>)}
+          </select>
+        </div>
+
+        {loading ? (
+          <p className="text-zinc-500 text-center py-12 font-mono">Loading transactions...</p>
+        ) : (
+          <div className="border border-[#1a2e1a] rounded-xl overflow-hidden bg-[#0a0f0a]">
+            <div className="grid grid-cols-12 gap-2 px-5 py-3 border-b border-[#1a2e1a] text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+              <div className="col-span-2">Status</div><div className="col-span-3">Skill</div><div className="col-span-3">Agent</div>
+              <div className="col-span-1 text-right">Cost</div><div className="col-span-1 text-right">Time</div><div className="col-span-2 text-right">When</div>
+            </div>
+            {filtered.length === 0 ? (
+              <div className="px-5 py-12 text-center text-zinc-500 font-mono text-sm">No transactions found.</div>
+            ) : filtered.map((t, i) => (
+              <div key={t.id} className={`grid grid-cols-12 gap-2 px-5 py-3 items-center text-sm ${i < filtered.length - 1 ? "border-b border-[#1a2e1a]/50" : ""} hover:bg-[#0a1f0a]/30 transition-colors`}>
+                <div className="col-span-2 flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${STATUS_DOT[t.status] || "bg-zinc-500"}`} />
+                  <span className="text-xs text-zinc-400 font-mono">{t.status}</span>
+                </div>
+                <div className="col-span-3"><span className="text-xs text-[#00ff41] font-mono">{t.skill}</span></div>
+                <div className="col-span-3"><span className="text-xs text-zinc-300">{t.agent_name}</span></div>
+                <div className="col-span-1 text-right"><span className="text-xs text-zinc-400 font-mono">₹{parseFloat(t.price).toFixed(0)}</span></div>
+                <div className="col-span-1 text-right"><span className="text-xs text-zinc-500 font-mono">{t.duration_s ? `${t.duration_s}s` : "—"}</span></div>
+                <div className="col-span-2 text-right"><span className="text-xs text-zinc-600 font-mono">{t.created_at ? timeAgo(t.created_at) : "—"}</span></div>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="text-center text-xs text-zinc-600 mt-4 font-mono">Showing {filtered.length} transactions</p>
+      </div>
     </div>
   );
-}
-
-export default function TasksPage() {
-  return <ProtectedRoute><TasksContent /></ProtectedRoute>;
 }
