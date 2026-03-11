@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ProtectedRoute } from "../lib/auth-context";
 import { getTasks } from "../lib/api";
-import { Card, StatusBadge } from "../lib/ui";
+import { Card, StatusBadge, Button } from "../lib/ui";
 
 type Task = {
-  id: string; skill: string; status: string; price: number;
-  provider_name?: string; requester_name?: string; created_at: string; role?: string;
+  id: string; skill_requested: string; status: string; quoted_price: string;
+  provider_agent_id?: string; created_at: string; description?: string;
 };
 
 const TABS = ["all", "requester", "provider"] as const;
@@ -26,16 +26,20 @@ function TasksContent() {
     if (tab !== "all") params.set("role", tab);
     if (status !== "all") params.set("status", status);
     getTasks(params.toString())
-      .then((d) => setTasks(Array.isArray(d) ? d : d.tasks || []))
+      .then((d) => {
+        const items = d.items || d.tasks || (Array.isArray(d) ? d : []);
+        setTasks(items);
+      })
       .catch(() => setTasks([]))
       .finally(() => setLoading(false));
   }, [tab, status]);
 
-  const filtered = tasks;
-
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Tasks</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Tasks</h1>
+        <Link href="/tasks/new"><Button>Post Task</Button></Link>
+      </div>
       <div className="flex items-center gap-6 mb-6">
         <div className="flex gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800">
           {TABS.map((t) => (
@@ -50,8 +54,14 @@ function TasksContent() {
           {STATUSES.map((s) => <option key={s} value={s}>{s === "all" ? "All statuses" : s}</option>)}
         </select>
       </div>
-      {loading ? <p className="text-zinc-500">Loading...</p> : filtered.length === 0 ? (
-        <Card><p className="text-zinc-500">No tasks found</p></Card>
+      {loading ? <p className="text-zinc-500">Loading...</p> : tasks.length === 0 ? (
+        <Card>
+          <div className="text-center py-8">
+            <p className="text-zinc-400 mb-2">No tasks found</p>
+            <p className="text-zinc-500 text-sm mb-4">Post a task to an agent to get started</p>
+            <Link href="/tasks/new"><Button>Post Task</Button></Link>
+          </div>
+        </Card>
       ) : (
         <Card className="!p-0 overflow-hidden">
           <table className="w-full">
@@ -59,21 +69,19 @@ function TasksContent() {
               <tr className="border-b border-zinc-800 text-left text-xs text-zinc-500">
                 <th className="px-4 py-3">Skill</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Provider</th>
                 <th className="px-4 py-3">Price</th>
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">ID</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((t) => (
+              {tasks.map((t) => (
                 <tr key={t.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
                   <td className="px-4 py-3">
-                    <Link href={`/tasks/${t.id}`} className="text-sm text-white hover:underline">{t.skill || "—"}</Link>
+                    <Link href={`/tasks/${t.id}`} className="text-sm text-white hover:underline">{t.skill_requested || "—"}</Link>
                   </td>
                   <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
-                  <td className="px-4 py-3 text-sm text-zinc-400">{t.provider_name || "—"}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-300">₹{t.price}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-300">₹{parseFloat(t.quoted_price || "0").toFixed(2)}</td>
                   <td className="px-4 py-3 text-xs text-zinc-500">{new Date(t.created_at).toLocaleDateString()}</td>
                   <td className="px-4 py-3 text-xs text-zinc-500 font-mono">{t.id?.slice(0, 8)}</td>
                 </tr>

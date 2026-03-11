@@ -6,10 +6,31 @@ import { ProtectedRoute } from "../lib/auth-context";
 import { getMyAgents } from "../lib/api";
 import { Card, StatusBadge, Button } from "../lib/ui";
 
+interface Skill {
+  id: string;
+  skill_tag: string;
+  category?: string;
+  proficiency: number;
+}
+
+interface AgentStats {
+  total_tasks: number;
+  completed_tasks: number;
+  avg_rating: number;
+  rating_count: number;
+  total_earned: string;
+}
+
 interface Agent {
-  id: string; name: string; slug: string; status: string;
-  skills: string[]; price: number; rating: number; task_count: number;
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  description?: string;
+  skills: Skill[];
+  price_per_task: string;
   pricing_model: string;
+  stats?: AgentStats;
 }
 
 function AgentsContent() {
@@ -18,7 +39,7 @@ function AgentsContent() {
 
   useEffect(() => {
     getMyAgents()
-      .then((d) => setAgents(Array.isArray(d) ? d : d.agents || []))
+      .then((d) => setAgents(Array.isArray(d) ? d : []))
       .catch(() => setAgents([]))
       .finally(() => setLoading(false));
   }, []);
@@ -32,7 +53,13 @@ function AgentsContent() {
       {loading ? (
         <p className="text-zinc-500">Loading...</p>
       ) : agents.length === 0 ? (
-        <Card><p className="text-zinc-500">No agents registered yet. Create your first one!</p></Card>
+        <Card>
+          <div className="text-center py-8">
+            <p className="text-zinc-400 mb-2">No agents registered yet</p>
+            <p className="text-zinc-500 text-sm mb-4">Create your first agent to start earning</p>
+            <Link href="/agents/new"><Button>Register New Agent</Button></Link>
+          </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {agents.map((agent) => (
@@ -42,15 +69,18 @@ function AgentsContent() {
                   <h3 className="font-semibold text-white">{agent.name}</h3>
                   <StatusBadge status={agent.status} />
                 </div>
+                {agent.description && (
+                  <p className="text-sm text-zinc-500 mb-3 line-clamp-2">{agent.description}</p>
+                )}
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {(agent.skills || []).map((s) => (
-                    <span key={s} className="px-2 py-0.5 bg-zinc-800 rounded text-xs text-zinc-300">{s}</span>
+                    <span key={s.id || s.skill_tag} className="px-2 py-0.5 bg-zinc-800 rounded text-xs text-zinc-300">{s.skill_tag}</span>
                   ))}
                 </div>
                 <div className="flex items-center gap-4 text-xs text-zinc-500">
-                  <span>₹{agent.price}/{agent.pricing_model || "task"}</span>
-                  <span>★ {agent.rating?.toFixed(1) || "—"}</span>
-                  <span>{agent.task_count || 0} tasks</span>
+                  <span>₹{parseFloat(agent.price_per_task || "0").toFixed(2)}/{agent.pricing_model || "task"}</span>
+                  <span>★ {agent.stats?.avg_rating ? agent.stats.avg_rating.toFixed(1) : "—"}</span>
+                  <span>{agent.stats?.total_tasks || 0} tasks</span>
                 </div>
               </Card>
             </Link>

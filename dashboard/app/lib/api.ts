@@ -71,6 +71,14 @@ export async function createAgent(data: Record<string, unknown>) {
   return res.json();
 }
 
+export async function searchAgents(skill?: string) {
+  const params = new URLSearchParams();
+  if (skill) params.set("skill", skill);
+  const res = await authFetch(`/v1/agents?${params.toString()}`);
+  if (!res.ok) throw new Error("Failed to search agents");
+  return res.json();
+}
+
 // Tasks
 export async function getTasks(params?: string) {
   const res = await authFetch(`/v1/tasks${params ? `?${params}` : ""}`);
@@ -84,10 +92,25 @@ export async function getTask(id: string) {
   return res.json();
 }
 
-export async function rateTask(id: string, rating: number, comment?: string) {
-  const res = await authFetch(`/v1/tasks/${id}/rate`, {
+export async function createTask(data: {
+  provider_agent_id: string;
+  skill_requested: string;
+  description?: string;
+  payload?: Record<string, unknown>;
+  max_wait_seconds?: number;
+}) {
+  const res = await authFetch("/v1/tasks", {
     method: "POST",
-    body: JSON.stringify({ rating, comment }),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error((await res.json()).detail || "Failed to create task");
+  return res.json();
+}
+
+export async function rateTask(taskId: string, overall_score: number, feedback?: string) {
+  const res = await authFetch("/v1/ratings", {
+    method: "POST",
+    body: JSON.stringify({ task_id: taskId, overall_score, feedback }),
   });
   if (!res.ok) throw new Error("Failed to rate task");
   return res.json();
@@ -115,9 +138,9 @@ export async function topUp(amount: number) {
   return res.json();
 }
 
-// Dashboard
-export async function getDashboard() {
-  const res = await authFetch("/v1/dashboard");
-  if (!res.ok) throw new Error("Failed to fetch dashboard");
+// Agent ratings
+export async function getAgentRatings(slug: string) {
+  const res = await authFetch(`/v1/agents/${slug}/ratings`);
+  if (!res.ok) throw new Error("Failed to fetch ratings");
   return res.json();
 }
