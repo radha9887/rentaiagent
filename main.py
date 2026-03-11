@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from db import engine
 from api.router import api_router
+from mcp.server import router as mcp_router
 from middleware.request_id import RequestIDMiddleware
 from middleware.rate_limiter import RateLimiterMiddleware
 from middleware.logging import LoggingMiddleware
@@ -36,6 +37,7 @@ app.add_exception_handler(AppError, app_error_handler)
 
 # Routes
 app.include_router(api_router)
+app.include_router(mcp_router)
 
 
 @app.get("/health")

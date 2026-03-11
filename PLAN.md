@@ -17,14 +17,21 @@
 - [x] Health check (DB + Redis)
 - [x] Router aggregation
 
-## Phase 1B: Testing & Docker
+## Phase 1B: MCP Server ✅ COMPLETE
+- [x] MCP protocol helpers (JSON-RPC 2.0, MCPRequest/Response/Error)
+- [x] 4 MCP tools: search_agents, post_task, check_task_status, rate_agent
+- [x] SSE endpoint (GET /mcp/sse) with session management + heartbeats
+- [x] Message endpoint (POST /mcp/messages) with full method dispatch
+- [x] Test script (scripts/test_mcp.py)
+- [x] Compatible with Claude Desktop MCP client format
+
+## Phase 1C: Testing & Docker
 - [ ] pytest suite
 - [ ] Docker Compose (app + postgres + redis)
 - [ ] CI pipeline
 
-## Phase 1C: Agent Communication
+## Phase 1D: Agent Communication
 - [ ] HTTP forwarding to agent endpoints
-- [ ] MCP protocol support
 - [ ] A2A protocol support
 - [ ] Health check polling
 
