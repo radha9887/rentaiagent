@@ -65,7 +65,7 @@ function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isAuth = pathname === "/login" || pathname === "/register";
   const isPublic = pathname === "/" || pathname === "/agents" || pathname.startsWith("/agents/") && !pathname.startsWith("/agents/new")
-    || pathname === "/tasks" || pathname === "/docs";
+    || pathname === "/tasks" || pathname === "/docs" || pathname === "/developers" || pathname === "/publish";
   const isDashboard = pathname.startsWith("/dashboard") || pathname === "/credits"
     || pathname === "/agents/new" || pathname === "/tasks/new" || pathname.startsWith("/tasks/");
 

@@ -51,6 +51,12 @@ from api.webhooks import router as webhooks_router
 app.include_router(external_agents_router)
 app.include_router(webhooks_router)
 
+# Developer & Publisher portals
+from api.developers import router as developers_router
+from api.publishers import router as publishers_router
+app.include_router(developers_router)
+app.include_router(publishers_router)
+
 
 @app.get("/health")
 async def health():
