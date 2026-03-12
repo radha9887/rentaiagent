@@ -43,3 +43,11 @@ class TaskResponse(BaseModel):
 class TaskComplete(BaseModel):
     result: Dict[str, Any]
     actual_price: Optional[Decimal] = None
+
+
+class AutoTaskCreate(BaseModel):
+    skill_requested: str
+    description: Optional[str] = None
+    payload: Optional[Dict[str, Any]] = None
+    max_wait_seconds: int = Field(default=300, ge=10, le=3600)
+    preferences: Optional[Dict[str, Any]] = None  # {max_price, min_rating, priority}

@@ -10,6 +10,7 @@ export default function AgentsMarketplace() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [sourceFilter, setSourceFilter] = useState<"All" | "Platform" | "External">("All");
+  const [availableOnly, setAvailableOnly] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +27,8 @@ export default function AgentsMarketplace() {
     const matchSearch = !q || a.name.toLowerCase().includes(q) || a.description?.toLowerCase().includes(q) || a.skills?.some(s => s.skill_tag.toLowerCase().includes(q));
     const isExternal = !!a.is_external;
     const matchSource = sourceFilter === "All" || (sourceFilter === "External" && isExternal) || (sourceFilter === "Platform" && !isExternal);
-    return matchCat && matchSearch && matchSource;
+    const matchAvailable = !availableOnly || ((a as any).active_task_count ?? 0) < ((a as any).max_concurrent_tasks ?? 10);
+    return matchCat && matchSearch && matchSource && matchAvailable;
   });
 
   return (
@@ -50,6 +52,9 @@ export default function AgentsMarketplace() {
                 className={`text-xs font-mono px-3 py-1.5 rounded-lg border transition-colors ${sourceFilter === src ? "bg-[#00ff41] text-black border-[#00ff41]" : "bg-[#0a0f0a] text-[#00ff41] border-[#1a2e1a] hover:border-[#00ff4155]"}`}
               >{src}{src === "External" ? " 🌐" : ""}</button>
             ))}
+            <button onClick={() => setAvailableOnly(!availableOnly)}
+              className={`text-xs font-mono px-3 py-1.5 rounded-lg border transition-colors ${availableOnly ? "bg-[#00ff41] text-black border-[#00ff41]" : "bg-[#0a0f0a] text-[#00ff41] border-[#1a2e1a] hover:border-[#00ff4155]"}`}
+            >Available ✓</button>
             <span className="text-zinc-600 mx-1">|</span>
             {CATEGORIES.map(cat => (
               <button key={cat} onClick={() => setCategory(cat)}

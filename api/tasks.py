@@ -12,7 +12,7 @@ from models.user import User
 from models.agent import Agent
 from models.task import Task
 from models.credit import Escrow
-from schemas.task import TaskCreate, TaskResponse, TaskComplete
+from schemas.task import TaskCreate, TaskResponse, TaskComplete, AutoTaskCreate
 from schemas.common import CursorPage, MessageResponse
 from utils.errors import NotFoundError, ForbiddenError, ValidationError as AppValidationError
 from utils.pagination import encode_cursor, decode_cursor
@@ -94,6 +94,49 @@ async def create_task(data: TaskCreate, user: User = Depends(get_current_user), 
     return task
 
 
+@router.post("/auto", response_model=TaskResponse, status_code=201)
+async def auto_create_task(data: AutoTaskCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Auto-select best agent and create task with failover."""
+    from core.auto_select import select_ranked_agents
+    from core.routing import route_task_with_failover
+
+    ranked = await select_ranked_agents(db, data.skill_requested, data.preferences)
+    if not ranked:
+        raise NotFoundError("No available agent for this skill")
+
+    best = ranked[0]
+    quoted_price = best.price_per_task
+    payload_size = len(json.dumps(data.payload).encode()) if data.payload else 0
+
+    task = Task(
+        requester_user_id=user.id,
+        provider_agent_id=best.id,
+        skill_requested=data.skill_requested,
+        description=data.description,
+        payload=data.payload,
+        payload_size_bytes=payload_size,
+        max_wait_seconds=data.max_wait_seconds,
+        priority="normal",
+        quoted_price=quoted_price,
+        currency=best.currency,
+        status="pending",
+        metadata_={"auto_selected": True, "preferences": data.preferences},
+    )
+    db.add(task)
+    await db.flush()
+
+    if quoted_price > 0:
+        escrow = await hold_credits(db, user.id, quoted_price, task.id)
+        task.status = "escrowed"
+        task.escrowed_at = datetime.now(timezone.utc)
+        task.platform_fee = escrow.platform_fee
+
+    task = await route_task_with_failover(db, task, ranked, max_attempts=3)
+    await db.commit()
+    await db.refresh(task)
+    return task
+
+
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(task_id: UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     task = (await db.execute(select(Task).where(Task.id == task_id))).scalar_one_or_none()
@@ -143,6 +186,11 @@ async def cancel_task(task_id: UUID, user: User = Depends(get_current_user), db:
 
     task.status = "cancelled"
     task.completed_at = datetime.now(timezone.utc)
+
+    # Release concurrency slot
+    from core.routing import release_agent_slot
+    await release_agent_slot(db, task.provider_agent_id)
+
     await db.commit()
     return MessageResponse(message="Task cancelled")
 
@@ -169,8 +217,84 @@ async def complete_task(task_id: UUID, data: TaskComplete, user: User = Depends(
     if escrow:
         await release_escrow(db, escrow.id)
 
+    # Release concurrency slot
+    from core.routing import release_agent_slot
+    await release_agent_slot(db, task.provider_agent_id)
+
     await db.commit()
     await db.refresh(task)
+    return task
+
+
+# ── Async agent callback endpoint ────────────────────────────────────────────
+
+import hashlib
+import hmac as hmac_mod
+from fastapi import Header
+
+
+@router.post("/{task_id}/result", response_model=TaskResponse)
+async def submit_task_result(
+    task_id: UUID,
+    data: TaskComplete,
+    x_rentanagent_signature: str = Header(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Callback endpoint for async agents to submit results.
+
+    Agents that returned {"accepted": true} during dispatch call this
+    endpoint when processing is complete. The request must be signed
+    with HMAC-SHA256 using the shared secret.
+    """
+    from config import settings as cfg
+    from core.routing import release_agent_slot
+    from core.health import record_dispatch_success
+
+    task = (await db.execute(select(Task).where(Task.id == task_id))).scalar_one_or_none()
+    if not task:
+        raise NotFoundError("Task not found")
+
+    if task.status not in ("processing", "routed"):
+        raise AppValidationError(f"Task not awaiting result (status: {task.status})")
+
+    # Verify HMAC signature
+    body_bytes = json.dumps(data.model_dump(), default=str).encode()
+    expected_sig = hmac_mod.new(cfg.HMAC_SECRET.encode(), body_bytes, hashlib.sha256).hexdigest()
+    if not hmac_mod.compare_digest(x_rentanagent_signature, expected_sig):
+        raise ForbiddenError("Invalid signature")
+
+    task.result = data.result
+    task.result_size_bytes = len(json.dumps(data.result).encode())
+    task.actual_price = data.actual_price or task.quoted_price
+    task.status = "completed"
+    task.completed_at = datetime.now(timezone.utc)
+
+    # Release escrow
+    escrow = (await db.execute(
+        select(Escrow).where(Escrow.task_id == task_id, Escrow.status == "held")
+    )).scalar_one_or_none()
+    if escrow:
+        await release_escrow(db, escrow.id)
+
+    # Release concurrency slot
+    await release_agent_slot(db, task.provider_agent_id)
+
+    # Record healthy dispatch
+    agent = (await db.execute(select(Agent).where(Agent.id == task.provider_agent_id))).scalar_one_or_none()
+    if agent:
+        await record_dispatch_success(db, agent)
+
+    await db.commit()
+    await db.refresh(task)
+
+    # Trigger webhooks
+    try:
+        from core.webhooks import trigger_webhook
+        await trigger_webhook(db, task.id, "task.completed")
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error("Failed to trigger webhooks for task %s: %s", task.id, e)
+
     return task
 
 

@@ -50,3 +50,12 @@ async def suspend_agent(agent_id: UUID, user: User = Depends(require_admin), db:
     agent.status = "suspended"
     await db.commit()
     return MessageResponse(message="Agent suspended")
+
+
+@router.post("/health-check")
+async def trigger_health_check(user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    """Trigger health check for all agents."""
+    from core.health import check_all_agents_health
+    results = await check_all_agents_health(db)
+    await db.commit()
+    return results

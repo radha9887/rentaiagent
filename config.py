@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     WEBHOOK_TIMEOUT_SECONDS: int = 30
     WEBHOOK_MAX_RETRIES: int = 3
     EXTERNAL_AGENT_HEALTH_INTERVAL_MINUTES: int = 60
+    HEALTH_CHECK_INTERVAL_SECONDS: int = 300
+    MAX_CONSECUTIVE_HEALTH_FAILS: int = 3
+    DEFAULT_MAX_CONCURRENT_TASKS: int = 10
 
     model_config = {"env_prefix": "RAA_", "env_file": ".env"}
 

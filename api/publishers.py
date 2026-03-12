@@ -36,6 +36,7 @@ class PublishAgent(BaseModel):
     skills: List[SkillInput] = []
     price_per_task: float = 0.0
     currency: str = "INR"
+    max_concurrent_tasks: int = 10
 
 
 @router.post("/register")
@@ -95,6 +96,7 @@ async def publish_agent(data: PublishAgent, user: User = Depends(get_current_use
         currency=data.currency,
         status="online",
         trust_tier="new",
+        max_concurrent_tasks=data.max_concurrent_tasks,
     )
     db.add(agent)
     await db.flush()

@@ -270,3 +270,77 @@ async def _rate_agent(params: dict, user_id: uuid.UUID, db: AsyncSession) -> dic
         "rating_id": str(rating.id),
         "message": "Rating submitted successfully",
     }
+
+
+# ---------------------------------------------------------------------------
+# hire_best_agent
+# ---------------------------------------------------------------------------
+
+@_register(
+    name="hire_best_agent",
+    description="Automatically find and hire the best available agent for a skill. The platform selects the optimal agent based on rating, price, speed, and availability.",
+    schema={
+        "type": "object",
+        "properties": {
+            "skill": {"type": "string", "description": "Skill needed (e.g. 'summarize', 'translate')"},
+            "payload": {"type": "object", "description": "Task payload"},
+            "priority": {"type": "string", "enum": ["balanced", "quality", "speed", "price"], "description": "What to optimize for"},
+            "max_price": {"type": "number", "description": "Maximum price willing to pay"},
+        },
+        "required": ["skill"],
+    },
+)
+async def _hire_best_agent(params: dict, user_id: uuid.UUID, db: AsyncSession) -> dict:
+    from core.auto_select import select_ranked_agents
+    from core.routing import route_task_with_failover
+
+    preferences = {}
+    if params.get("priority"):
+        preferences["priority"] = params["priority"]
+    if params.get("max_price") is not None:
+        preferences["max_price"] = params["max_price"]
+
+    ranked = await select_ranked_agents(db, params["skill"], preferences)
+    if not ranked:
+        raise ValueError(f"No available agent for skill '{params['skill']}'")
+
+    best = ranked[0]
+    quoted_price = Decimal(str(best.price_per_task))
+    platform_fee = quoted_price * Decimal("15") / Decimal("100")
+
+    task = Task(
+        id=uuid.uuid4(),
+        requester_user_id=user_id,
+        provider_agent_id=best.id,
+        skill_requested=params["skill"],
+        description=f"Auto-selected agent for {params['skill']}",
+        payload=params.get("payload"),
+        max_wait_seconds=300,
+        quoted_price=quoted_price,
+        platform_fee=platform_fee,
+        status="pending",
+        metadata_={"auto_selected": True, "priority": params.get("priority", "balanced")},
+    )
+    db.add(task)
+    await db.flush()
+
+    escrow = await hold_credits(db, user_id, quoted_price, task.id)
+    task.status = "escrowed"
+    task.escrowed_at = datetime.now(timezone.utc)
+    await db.flush()
+
+    task = await route_task_with_failover(db, task, ranked, max_attempts=3)
+    await db.commit()
+
+    # Fetch the agent that actually handled it (may differ from best due to failover)
+    assigned = (await db.execute(select(Agent).where(Agent.id == task.provider_agent_id))).scalar_one_or_none()
+
+    return {
+        "task_id": str(task.id),
+        "status": task.status,
+        "agent_slug": assigned.slug if assigned else None,
+        "agent_name": assigned.name if assigned else None,
+        "quoted_price": str(quoted_price),
+        "platform_fee": str(platform_fee),
+        "result": task.result,
+    }

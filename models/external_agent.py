@@ -35,4 +35,7 @@ class ExternalAgent(Base, TimestampMixin):
     skills = Column(JSONB, nullable=True)
     stats = Column(JSONB, default=lambda: {"total_tasks": 0, "completed": 0, "failed": 0, "avg_response_ms": 0, "success_rate": 0})
 
+    max_concurrent_tasks = Column(Integer, default=5, nullable=False)
+    active_task_count = Column(Integer, default=0, nullable=False)
+
     owner = relationship("User")

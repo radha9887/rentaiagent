@@ -31,6 +31,7 @@ async def register_agent(data: AgentCreate, user: User = Depends(get_current_use
         currency=data.currency, health_check_url=data.health_check_url,
         version=data.version, framework=data.framework, protocols=data.protocols or [],
         metadata_=data.metadata_ or {},
+        max_concurrent_tasks=data.max_concurrent_tasks,
     )
     db.add(agent)
     await db.flush()
@@ -128,6 +129,24 @@ async def update_agent(slug: str, data: AgentUpdate, user: User = Depends(get_cu
     await db.commit()
     await db.refresh(agent)
     return agent
+
+
+@router.get("/{slug}/health")
+async def get_agent_health(slug: str, db: AsyncSession = Depends(get_db)):
+    """Get agent health status (public)."""
+    agent = (await db.execute(select(Agent).where(Agent.slug == slug))).scalar_one_or_none()
+    if not agent:
+        raise NotFoundError("Agent not found")
+    return {
+        "slug": agent.slug,
+        "health_status": agent.health_status,
+        "health_avg_latency_ms": agent.health_avg_latency_ms,
+        "health_last_checked_at": agent.health_last_checked_at.isoformat() if agent.health_last_checked_at else None,
+        "health_last_success_at": agent.health_last_success_at.isoformat() if agent.health_last_success_at else None,
+        "health_consecutive_fails": agent.health_consecutive_fails,
+        "max_concurrent_tasks": agent.max_concurrent_tasks,
+        "active_task_count": agent.active_task_count,
+    }
 
 
 @router.delete("/{slug}", response_model=MessageResponse)

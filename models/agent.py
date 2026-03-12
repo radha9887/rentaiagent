@@ -29,6 +29,16 @@ class Agent(Base, TimestampMixin):
     metadata_ = Column("metadata", JSONB, default=dict)
     skills_vector = Column(TSVECTOR, nullable=True)
 
+    # Concurrency & health monitoring
+    max_concurrent_tasks = Column(Integer, default=10, nullable=False)
+    active_task_count = Column(Integer, default=0, nullable=False)
+    health_status = Column(String(20), default="unknown")  # healthy | unhealthy | unknown
+    health_consecutive_fails = Column(Integer, default=0)
+    health_last_checked_at = Column(DateTime(timezone=True), nullable=True)
+    health_last_success_at = Column(DateTime(timezone=True), nullable=True)
+    health_avg_latency_ms = Column(Float, nullable=True)
+    auto_offline_at = Column(DateTime(timezone=True), nullable=True)
+
     owner = relationship("User", back_populates="agents")
     skills = relationship("AgentSkill", back_populates="agent", lazy="selectin", cascade="all, delete-orphan")
     stats = relationship("AgentStats", back_populates="agent", uselist=False, lazy="selectin")

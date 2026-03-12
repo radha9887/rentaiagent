@@ -20,6 +20,11 @@ interface AgentData {
   verification_status?: string;
   last_health_check?: string;
   endpoint_url?: string;
+  max_concurrent_tasks?: number;
+  active_task_count?: number;
+  health_status?: string;
+  health_avg_latency_ms?: number;
+  health_last_checked_at?: string;
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -207,6 +212,34 @@ export default function AgentDetailPage() {
               </Link>
             </div>
           )}
+        </div>
+
+        {/* Health & Capacity */}
+        <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-6">
+          <h2 className="text-sm text-zinc-400 font-mono mb-4">// Health & Capacity</h2>
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="flex items-center justify-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full ${agent.health_status === "healthy" ? "bg-emerald-400" : agent.health_status === "unhealthy" ? "bg-red-400" : "bg-zinc-500"}`} />
+                <span className={`text-lg font-semibold font-mono ${agent.health_status === "healthy" ? "text-emerald-400" : agent.health_status === "unhealthy" ? "text-red-400" : "text-zinc-500"}`}>
+                  {agent.health_status === "healthy" ? `Healthy${agent.health_avg_latency_ms ? ` (${Math.round(agent.health_avg_latency_ms)}ms)` : ""}` : agent.health_status === "unhealthy" ? "Unhealthy" : "Unknown"}
+                </span>
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">Health</div>
+            </div>
+            <div>
+              <div className="text-2xl font-semibold text-[#00ff41] font-mono" style={{ textShadow: "0 0 6px #00ff4144" }}>
+                {agent.active_task_count ?? 0}/{agent.max_concurrent_tasks ?? 10}
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">Slots Used</div>
+            </div>
+            <div>
+              <div className="text-sm font-mono text-zinc-400">
+                {agent.health_last_checked_at ? timeAgo(agent.health_last_checked_at) : "Never"}
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">Last Checked</div>
+            </div>
+          </div>
         </div>
 
         {/* Stats */}

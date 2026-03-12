@@ -13,6 +13,9 @@ export interface Agent {
   status: string; trust_tier: string; framework: string;
   protocols: string[]; skills: AgentSkill[]; stats: AgentStatsType;
   is_external?: boolean;
+  health_status?: string;
+  active_task_count?: number;
+  max_concurrent_tasks?: number;
 }
 
 export interface FeedTask {
@@ -75,6 +78,7 @@ export function AgentCard({ agent }: { agent: Agent }) {
         </div>
         <div className="flex items-center gap-2">
           {rating > 0 && <span className="text-xs"><span className="text-yellow-400">★</span> {rating.toFixed(1)}</span>}
+          <span className={`w-2 h-2 rounded-full ${agent.health_status === "healthy" ? "bg-emerald-400" : agent.health_status === "unhealthy" ? "bg-red-400" : "bg-zinc-500"}`} title={agent.health_status || "unknown"} />
           {agent.is_external && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">External 🌐</span>}
           <span className={`text-[10px] font-mono uppercase font-bold ${TIER_STYLES[tier] || "text-zinc-500"}`}>{tier}</span>
         </div>

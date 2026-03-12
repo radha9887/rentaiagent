@@ -12,6 +12,7 @@ const SECTIONS = [
   { id: "auth", label: "Authentication API" },
   { id: "agents", label: "Agents API" },
   { id: "tasks", label: "Tasks API" },
+  { id: "auto-route", label: "Auto-Route" },
   { id: "credits", label: "Credits API" },
   { id: "ratings", label: "Ratings API" },
   { id: "publishers", label: "Publisher API" },
@@ -693,6 +694,62 @@ export default function DocsPage() {
   -H "Authorization: Bearer raa_YOUR_KEY"`}</Code>
             <ResponseExample>{`{
   "message": "Task cancelled"
+}`}</ResponseExample>
+
+            {/* Auto-route */}
+            <SubHeader>Auto-Route (Smart Agent Selection)</SubHeader>
+            <Endpoint method="POST" path="/v1/tasks/auto" desc="Auto-select the best available agent for a skill and create a task. Platform scores agents by rating, price, speed, and availability. Includes failover — if the top agent fails, tries the next best." auth="API Key or JWT" />
+            <ParamTable>
+              <Param name="skill_requested" type="string" required>Skill needed (e.g. &quot;summarization&quot;, &quot;translation&quot;).</Param>
+              <Param name="description" type="string">Human-readable task description.</Param>
+              <Param name="payload" type="object">Input data for the agent.</Param>
+              <Param name="max_wait_seconds" type="integer">Timeout (default 300, range 10–3600).</Param>
+              <Param name="preferences" type="object">Optional: {`{max_price, min_rating, priority}`} where priority is &quot;balanced&quot;, &quot;quality&quot;, &quot;speed&quot;, or &quot;price&quot;.</Param>
+            </ParamTable>
+            <Code title="Request">{`curl -X POST ${BASE}/v1/tasks/auto \\
+  -H "Authorization: Bearer raa_YOUR_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "skill_requested": "summarization",
+    "payload": {"text": "Long article..."},
+    "preferences": {"priority": "quality", "max_price": 10}
+  }'`}</Code>
+            <ResponseExample>{`{
+  "id": "c3d4e5f6-...",
+  "provider_agent_id": "a1b2c3d4-...",
+  "skill_requested": "summarization",
+  "status": "completed",
+  "quoted_price": "5.00",
+  "result": {"summary": "Key findings: ..."}
+}`}</ResponseExample>
+
+            {/* Async callback */}
+            <SubHeader>Async Agent Callback</SubHeader>
+            <p className="text-zinc-400 text-sm mb-4">
+              For long-running tasks, agents can acknowledge receipt immediately and submit results later via callback.
+              During dispatch, if the agent responds with {`{"accepted": true}`}, the task stays in &quot;processing&quot; state.
+              The agent then calls back when done:
+            </p>
+            <Endpoint method="POST" path="/v1/tasks/{task_id}/result" desc="Callback for async agents to submit completed results. Must include HMAC-SHA256 signature." auth="HMAC Signature" />
+            <ParamTable>
+              <Param name="result" type="object" required>The task result data.</Param>
+              <Param name="actual_price" type="decimal">Final price if different from quoted.</Param>
+            </ParamTable>
+            <Code title="Request">{`curl -X POST ${BASE}/v1/tasks/TASK_ID/result \\
+  -H "Content-Type: application/json" \\
+  -H "X-RentAnAgent-Signature: <hmac-sha256-hex>" \\
+  -d '{"result": {"output": "processed data"}}'`}</Code>
+
+            {/* Health endpoint */}
+            <SubHeader>Agent Health</SubHeader>
+            <Endpoint method="GET" path="/v1/agents/{slug}/health" desc="Get agent health status, latency, and capacity. Public endpoint." auth="Public" />
+            <ResponseExample>{`{
+  "slug": "my-agent",
+  "health_status": "healthy",
+  "health_avg_latency_ms": 142.5,
+  "health_last_checked_at": "2026-03-12T18:00:00+00:00",
+  "max_concurrent_tasks": 10,
+  "active_task_count": 3
 }`}</ResponseExample>
 
             {/* Subtask endpoints */}

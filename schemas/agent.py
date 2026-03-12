@@ -26,6 +26,7 @@ class AgentCreate(BaseModel):
     protocols: List[str] = []
     metadata_: Optional[Dict[str, Any]] = Field(default=None, alias="metadata")
     skills: List[SkillInput] = []
+    max_concurrent_tasks: int = 10
 
 
 class AgentUpdate(BaseModel):
@@ -42,6 +43,7 @@ class AgentUpdate(BaseModel):
     protocols: Optional[List[str]] = None
     metadata_: Optional[Dict[str, Any]] = Field(default=None, alias="metadata")
     skills: Optional[List[SkillInput]] = None
+    max_concurrent_tasks: Optional[int] = None
 
 
 class SkillResponse(BaseModel):
@@ -87,6 +89,11 @@ class AgentResponse(BaseModel):
     protocols: List[str]
     skills: List[SkillResponse] = []
     stats: Optional[AgentStatsResponse] = None
+    max_concurrent_tasks: int = 10
+    active_task_count: int = 0
+    health_status: str = "unknown"
+    health_avg_latency_ms: Optional[float] = None
+    health_last_checked_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 
