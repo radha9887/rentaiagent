@@ -163,7 +163,6 @@ export function Navbar() {
             <Link href="/tasks" className={`transition-colors ${isActive("/tasks") ? "text-white" : "hover:text-white"}`}>Transactions</Link>
             <Link href="/docs" className={`transition-colors ${isActive("/docs") ? "text-white" : "hover:text-white"}`}>Docs</Link>
             <Link href="/developers" className={`transition-colors ${isActive("/developers") ? "text-white" : "hover:text-white"}`}>Developers</Link>
-            <Link href="/publish" className={`transition-colors ${isActive("/publish") ? "text-white" : "hover:text-white"}`}>Publish</Link>
           </div>
         </div>
         <div className="flex items-center gap-3">

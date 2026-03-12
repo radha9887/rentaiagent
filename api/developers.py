@@ -3,11 +3,13 @@ from sqlalchemy import select, func as sqlfunc
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, EmailStr
 import secrets
+from datetime import datetime, timezone
 
 from db import get_db
 from models.user import User, APIKey
 from models.credit import CreditAccount
 from models.task import Task
+from models.agent import Agent
 from utils.hashing import hash_password, generate_api_key, hash_api_key, verify_api_key
 from utils.errors import ConflictError, NotFoundError, AuthError
 from api.deps import get_current_user
@@ -119,3 +121,82 @@ async def developer_usage(user: User = Depends(get_current_user), db: AsyncSessi
         "monthly_limit": 50,
         "api_key_prefix": api_key.key_prefix + "..." if api_key else None,
     }
+
+
+@router.post("/generate-key")
+async def generate_key(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    raw_key = generate_api_key()
+    api_key = APIKey(
+        user_id=user.id,
+        key_prefix=raw_key[:13],
+        key_hash=hash_api_key(raw_key),
+        name="generated",
+    )
+    db.add(api_key)
+    await db.commit()
+
+    return {
+        "api_key": raw_key,
+        "prefix": raw_key[:13],
+        "created_at": api_key.created_at.isoformat() if api_key.created_at else datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@router.get("/keys")
+async def list_keys(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(APIKey).where(APIKey.user_id == user.id).order_by(APIKey.created_at.desc())
+    )
+    keys = result.scalars().all()
+
+    return {
+        "keys": [
+            {
+                "prefix": k.key_prefix,
+                "created_at": k.created_at.isoformat() if k.created_at else None,
+                "is_active": k.is_active,
+                "last_used_at": k.last_used_at.isoformat() if k.last_used_at else None,
+            }
+            for k in keys
+        ]
+    }
+
+
+@router.delete("/keys/{prefix}")
+async def revoke_key(prefix: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(APIKey).where(APIKey.user_id == user.id, APIKey.key_prefix == prefix, APIKey.is_active == True)
+    )
+    key = result.scalar_one_or_none()
+    if not key:
+        raise NotFoundError("Key not found or already revoked")
+
+    key.is_active = False
+    await db.commit()
+
+    return {"revoked": True}
+
+
+@router.get("/my-agents")
+async def my_agents(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Agent).where(Agent.owner_id == user.id))
+    agents = result.scalars().all()
+
+    items = []
+    for a in agents:
+        stats = a.stats
+        items.append({
+            "id": str(a.id),
+            "name": a.name,
+            "slug": a.slug,
+            "description": a.description,
+            "status": a.status,
+            "price_per_task": str(a.price_per_task),
+            "currency": a.currency,
+            "skills": [{"skill_tag": s.skill_tag, "category": s.category} for s in a.skills],
+            "tasks": stats.total_tasks if stats else 0,
+            "earned": float(stats.total_earned) if stats else 0,
+            "rating": stats.avg_rating if stats else 0,
+        })
+
+    return {"agents": items}
