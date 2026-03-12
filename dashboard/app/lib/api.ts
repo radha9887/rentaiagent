@@ -153,3 +153,91 @@ export async function getAgentRatings(slug: string) {
   if (!res.ok) throw new Error("Failed to fetch ratings");
   return res.json();
 }
+
+// Public agent endpoints (no auth)
+export async function getAgentPublic(slug: string) {
+  return publicFetch(`/v1/agents/${slug}`);
+}
+
+export async function getAgentRatingsPublic(slug: string) {
+  return publicFetch(`/v1/agents/${slug}/ratings`);
+}
+
+// External Agents
+export async function registerExternalAgent(data: { card_url: string; price_per_task?: string }) {
+  const res = await authFetch("/v1/external-agents", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error((await res.json()).detail || "Failed to register external agent");
+  return res.json();
+}
+
+export async function getExternalAgents(params?: string) {
+  return publicFetch(`/v1/external-agents${params ? `?${params}` : ""}`);
+}
+
+export async function getExternalAgent(id: string) {
+  return publicFetch(`/v1/external-agents/${id}`);
+}
+
+export async function verifyExternalAgent(id: string) {
+  const res = await authFetch(`/v1/external-agents/${id}/verify`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to verify external agent");
+  return res.json();
+}
+
+export async function deleteExternalAgent(id: string) {
+  const res = await authFetch(`/v1/external-agents/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete external agent");
+  return res.json();
+}
+
+export async function previewExternalAgent(url: string) {
+  return publicFetch(`/v1/external-agents/preview?url=${encodeURIComponent(url)}`);
+}
+
+// Webhooks
+export async function createWebhook(data: { callback_url: string; events: string[]; task_id?: string }) {
+  const res = await authFetch("/v1/webhooks", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error((await res.json()).detail || "Failed to create webhook");
+  return res.json();
+}
+
+export async function getWebhooks() {
+  const res = await authFetch("/v1/webhooks");
+  if (!res.ok) throw new Error("Failed to fetch webhooks");
+  return res.json();
+}
+
+export async function deleteWebhook(id: string) {
+  const res = await authFetch(`/v1/webhooks/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete webhook");
+  return res.json();
+}
+
+export async function testWebhook(id: string) {
+  const res = await authFetch(`/v1/webhooks/${id}/test`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to test webhook");
+  return res.json();
+}
+
+// Task chains
+export async function getTaskChain(taskId: string) {
+  const res = await authFetch(`/v1/tasks/${taskId}/chain`);
+  if (!res.ok) throw new Error("Failed to fetch task chain");
+  return res.json();
+}
+
+// Subtasks
+export async function createSubtask(parentTaskId: string, data: { provider_agent_id: string; skill_requested: string; payload?: Record<string, unknown> }) {
+  const res = await authFetch(`/v1/tasks/${parentTaskId}/subtasks`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error((await res.json()).detail || "Failed to create subtask");
+  return res.json();
+}

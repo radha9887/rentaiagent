@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Integer, Numeric, func
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Text, Integer, Numeric, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from models import Base, TimestampMixin
 
@@ -30,3 +30,9 @@ class Task(Base, TimestampMixin):
     result_size_bytes = Column(Integer, nullable=True)
     error_message = Column(Text, nullable=True)
     metadata_ = Column("metadata", JSONB, default=dict)
+
+    # Multi-hop task chain fields
+    parent_task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=True)
+    root_task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=True)
+    hop_depth = Column(Integer, default=0)
+    is_subtask = Column(Boolean, default=False)

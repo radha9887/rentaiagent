@@ -35,13 +35,57 @@
 - [x] Health check periodic task (Celery beat, 5 min interval)
 - [x] Config: HMAC_SECRET, HEALTH_CHECK_TIMEOUT_SECONDS, SIMULATION_MODE
 
-## Phase 1D: Testing & Docker
-- [ ] pytest suite
-- [ ] Docker Compose (app + postgres + redis)
-- [ ] CI pipeline
+## Phase 1D: Deployment ✅ COMPLETE
+- [x] PostgreSQL + Redis on VPS
+- [x] API on port 8100, Dashboard on port 3100
+- [x] E2E tested (register → agent → task → escrow → pay → rate)
 
-## Phase 2: Advanced Features
-- [ ] SSE streaming for task status
-- [ ] Webhook notifications
-- [ ] Agent discovery protocol
-- [ ] Subscription billing
+## Phase 1E: Real Agents + UI ✅ COMPLETE
+- [x] 15 real agent workers (ports 8201-8215), pure Python, no LLM
+- [x] Worker framework with HMAC validation (workers/base_worker.py)
+- [x] Registration + runner + E2E test scripts
+- [x] Simulation mode OFF — real task dispatch working
+- [x] Public marketplace (/agents) with search + filters
+- [x] Agent detail page (/agents/[slug]) with Quick Hire form
+- [x] Task detail page (/tasks/[id]) with live polling + status timeline
+- [x] Post task flow (/tasks/new) — select agent → skill → payload → cost preview
+- [x] API docs page (/docs) — REST, MCP, A2A setup examples
+- [x] Dashboard redesign — green terminal aesthetic throughout
+- [x] Shared Navbar with auth state across all pages
+
+## Phase 2: Production Ready
+- [ ] Systemd services (API + dashboard + workers — stop process babysitting)
+- [ ] Domain + nginx reverse proxy + Let's Encrypt SSL
+- [ ] Razorpay integration (buy credits with real money)
+- [ ] Better error messages (show "Insufficient credits" not generic errors)
+- [ ] Mobile responsive
+- [ ] Agent health checks (auto-offline dead agents)
+- [ ] New user onboarding (free credits on signup, guided first task)
+
+## Phase 3: A2A Protocol — Real Implementation
+- [ ] External A2A agent registration (agents hosted elsewhere register via agent card URL)
+- [ ] A2A discovery (fetch /.well-known/agent.json from external URLs)
+- [ ] Inbound A2A: external agents POST tasks TO our platform agents
+- [ ] Outbound A2A: our platform dispatches tasks via A2A JSON-RPC (not just REST webhooks)
+- [ ] A2A streaming (SSE for long-running tasks)
+- [ ] A2A push notifications (task status callbacks)
+- [ ] Multi-hop: Agent A hires Agent B who hires Agent C (nested escrow)
+- [ ] Agent card validation + trust scoring for external agents
+- [ ] A2A test suite with mock external agents
+- [ ] Demo: Claude/GPT agent discovers and hires a RentAnAgent provider via A2A
+
+## Phase 4: Growth
+- [ ] SDK packages (pip install rentanagent / npm install rentanagent)
+- [ ] SSE streaming for task status in UI
+- [ ] Webhook notifications for task completion
+- [ ] Agent analytics dashboard (revenue charts, usage over time)
+- [ ] Public API playground in docs
+- [ ] pytest suite + CI pipeline
+- [ ] Docker Compose (app + postgres + redis)
+
+## Phase 5: Go-to-Market
+- [ ] Landing page SEO + copy
+- [ ] Twitter/LinkedIn launch
+- [ ] 2-3 "real" agents with actual API backends (LLM summarizer, real OCR)
+- [ ] Subscription billing (monthly agent hosting plans)
+- [ ] Blog / tutorials

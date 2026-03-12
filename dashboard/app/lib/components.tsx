@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 /* ─── Agent types ─── */
 export interface AgentSkill { skill_tag: string; category: string }
@@ -10,6 +12,7 @@ export interface Agent {
   pricing_model: string; price_per_task: string; currency: string;
   status: string; trust_tier: string; framework: string;
   protocols: string[]; skills: AgentSkill[]; stats: AgentStatsType;
+  is_external?: boolean;
 }
 
 export interface FeedTask {
@@ -72,6 +75,7 @@ export function AgentCard({ agent }: { agent: Agent }) {
         </div>
         <div className="flex items-center gap-2">
           {rating > 0 && <span className="text-xs"><span className="text-yellow-400">★</span> {rating.toFixed(1)}</span>}
+          {agent.is_external && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">External 🌐</span>}
           <span className={`text-[10px] font-mono uppercase font-bold ${TIER_STYLES[tier] || "text-zinc-500"}`}>{tier}</span>
         </div>
       </div>
@@ -124,3 +128,57 @@ export function Kw({ children }: { children: React.ReactNode }) { return <span s
 export function Str({ children }: { children: React.ReactNode }) { return <span style={{ color: "#00ff41" }}>{children}</span>; }
 export function Num({ children }: { children: React.ReactNode }) { return <span style={{ color: "#fb923c" }}>{children}</span>; }
 export function Cmt({ children }: { children: React.ReactNode }) { return <span style={{ color: "#525252" }}>{children}</span>; }
+
+/* ─── Shared Navbar ─── */
+export function Navbar() {
+  const pathname = usePathname();
+  const [scrolled, setScrolled] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
+
+  useEffect(() => {
+    const h = () => setScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", h, { passive: true });
+    const token = localStorage.getItem("jwt");
+    const user = localStorage.getItem("user");
+    if (token && user) {
+      setLoggedIn(true);
+      try { setUserName(JSON.parse(user).display_name || ""); } catch {}
+    }
+    return () => window.removeEventListener("scroll", h);
+  }, []);
+
+  const isActive = (path: string) => pathname === path;
+
+  return (
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? "bg-[#09090b]/95 backdrop-blur border-b border-zinc-800/50" : "bg-transparent"}`}>
+      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-[#00ff41] text-xl">⬡</span>
+            <span className="font-bold text-white text-lg">RentAnAgent</span>
+          </Link>
+          <div className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
+            <Link href="/agents" className={`transition-colors ${isActive("/agents") ? "text-white" : "hover:text-white"}`}>Browse</Link>
+            <Link href="/tasks" className={`transition-colors ${isActive("/tasks") ? "text-white" : "hover:text-white"}`}>Transactions</Link>
+            <Link href="/docs" className={`transition-colors ${isActive("/docs") ? "text-white" : "hover:text-white"}`}>Docs</Link>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {loggedIn ? (
+            <>
+              <span className="text-sm text-zinc-400">{userName}</span>
+              <Link href="/dashboard" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Dashboard →</Link>
+              <button onClick={() => { localStorage.removeItem("jwt"); localStorage.removeItem("user"); window.location.href = "/login"; }} className="text-sm text-zinc-500 hover:text-white transition-colors px-2 py-1.5">Logout</button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">Sign In</Link>
+              <Link href="/register" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Register →</Link>
+            </>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+}

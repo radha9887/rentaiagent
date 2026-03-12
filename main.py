@@ -45,6 +45,12 @@ from a2a.server import router as a2a_server_router
 app.include_router(a2a_cards_router)
 app.include_router(a2a_server_router)
 
+# External agents & webhooks
+from api.external_agents import router as external_agents_router
+from api.webhooks import router as webhooks_router
+app.include_router(external_agents_router)
+app.include_router(webhooks_router)
+
 
 @app.get("/health")
 async def health():

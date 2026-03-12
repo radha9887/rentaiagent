@@ -1,4 +1,4 @@
-"""Start all 3 agent workers as subprocesses."""
+"""Start all 15 agent workers as subprocesses."""
 import subprocess
 import signal
 import sys
@@ -10,6 +10,18 @@ WORKERS = [
     ("text_summarizer.py", 8201),
     ("data_transformer.py", 8202),
     ("code_analyzer.py", 8203),
+    ("sentiment_analyzer.py", 8204),
+    ("text_translator.py", 8205),
+    ("email_writer.py", 8206),
+    ("hash_generator.py", 8207),
+    ("json_validator.py", 8208),
+    ("regex_helper.py", 8209),
+    ("markdown_converter.py", 8210),
+    ("api_tester.py", 8211),
+    ("diff_tool.py", 8212),
+    ("math_solver.py", 8213),
+    ("date_calculator.py", 8214),
+    ("password_generator.py", 8215),
 ]
 
 procs = []

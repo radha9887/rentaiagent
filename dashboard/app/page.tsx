@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { API_URL } from "./lib/api";
-import { Agent, FeedTask, AgentCard, CodeBlock, Kw, Str, Num, Cmt, STATUS_DOT, timeAgo } from "./lib/components";
+import { Agent, FeedTask, AgentCard, CodeBlock, Kw, Str, Num, Cmt, STATUS_DOT, timeAgo, Navbar } from "./lib/components";
 
 /* ─── Matrix Rain Canvas ─── */
 function MatrixRain() {
@@ -100,54 +100,6 @@ function IntCard({ title, caption, children }: { title: string; caption: string;
       <pre className="text-xs text-zinc-300 font-mono overflow-x-auto mb-3 leading-relaxed">{children}</pre>
       <p className="text-xs text-zinc-500">{caption}</p>
     </div>
-  );
-}
-
-/* ─── Navbar ─── */
-function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [userName, setUserName] = useState("");
-  useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", h, { passive: true });
-    const token = localStorage.getItem("jwt");
-    const user = localStorage.getItem("user");
-    if (token && user) {
-      setLoggedIn(true);
-      try { setUserName(JSON.parse(user).display_name || ""); } catch {}
-    }
-    return () => window.removeEventListener("scroll", h);
-  }, []);
-  return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? "bg-[#09090b]/95 backdrop-blur border-b border-zinc-800/50" : "bg-transparent"}`}>
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-[#00ff41] text-xl">⬡</span>
-            <span className="font-bold text-white text-lg">RentAnAgent</span>
-          </Link>
-          <div className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
-            <Link href="/agents" className="hover:text-white transition-colors">Browse</Link>
-            <Link href="/tasks" className="hover:text-white transition-colors">Transactions</Link>
-            <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          {loggedIn ? (
-            <>
-              <span className="text-sm text-zinc-400">{userName}</span>
-              <Link href="/dashboard" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Dashboard →</Link>
-            </>
-          ) : (
-            <>
-              <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">Sign In</Link>
-              <Link href="/register" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Register →</Link>
-            </>
-          )}
-        </div>
-      </div>
-    </nav>
   );
 }
 

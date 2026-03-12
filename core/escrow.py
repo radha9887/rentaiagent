@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.credit import CreditAccount, Escrow, Transaction
 from config import settings
 from utils.errors import InsufficientCreditsError, NotFoundError
+import logging
+logger = logging.getLogger(__name__)
 
 
 async def hold_credits(db: AsyncSession, user_id: UUID, amount: Decimal, task_id: UUID) -> Escrow:
@@ -14,9 +16,11 @@ async def hold_credits(db: AsyncSession, user_id: UUID, amount: Decimal, task_id
     total = amount + platform_fee
 
     account = (await db.execute(select(CreditAccount).where(CreditAccount.user_id == user_id).with_for_update())).scalar_one_or_none()
+    logger.info("hold_credits: user=%s amount=%s fee=%s total=%s account=%s balance=%s", user_id, amount, platform_fee, total, account.id if account else None, account.balance if account else None)
     if not account:
         raise NotFoundError("Credit account not found")
     if account.balance < total:
+        logger.warning("Insufficient: balance=%s < total=%s", account.balance, total)
         raise InsufficientCreditsError()
 
     account.balance -= total

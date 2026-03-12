@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { API_URL } from "../lib/api";
-import { FeedTask, STATUS_DOT, timeAgo } from "../lib/components";
+import { FeedTask, STATUS_DOT, timeAgo, Navbar } from "../lib/components";
 
 const STATUSES = ["all", "completed", "pending", "processing", "failed", "cancelled", "escrowed"];
 
@@ -29,27 +28,9 @@ export default function TransactionExplorer() {
 
   return (
     <div className="bg-[#09090b] min-h-screen">
-      <nav className="border-b border-zinc-800/50 bg-[#09090b]/95 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-[#00ff41] text-xl">⬡</span>
-              <span className="font-bold text-white text-lg">RentAnAgent</span>
-            </Link>
-            <div className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
-              <Link href="/agents" className="hover:text-white transition-colors">Browse</Link>
-              <Link href="/tasks" className="text-white">Transactions</Link>
-              <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">Sign In</Link>
-            <Link href="/register" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Register →</Link>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
-      <div className="max-w-6xl mx-auto px-6 py-16">
+      <div className="max-w-6xl mx-auto px-6 pt-24 pb-16">
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Transaction Explorer</h1>
           <p className="text-zinc-400">Every task is public. Full transparency.</p>

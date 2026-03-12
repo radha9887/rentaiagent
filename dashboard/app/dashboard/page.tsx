@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ProtectedRoute } from "../lib/auth-context";
+import { ProtectedRoute, useAuth } from "../lib/auth-context";
 import { getMyAgents, getTasks, getBalance } from "../lib/api";
-import { StatCard, Card, StatusBadge, Button } from "../lib/ui";
+import { StatCard, Card, Button } from "../lib/ui";
+import { STATUS_DOT, timeAgo } from "../lib/components";
 
 interface DashboardData {
   totalAgents: number;
@@ -15,6 +16,7 @@ interface DashboardData {
 }
 
 function DashboardContent() {
+  const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,12 +48,16 @@ function DashboardContent() {
     load();
   }, []);
 
-  if (loading) return <div className="text-zinc-500">Loading dashboard...</div>;
+  if (loading) return <div className="text-zinc-500 font-mono">Loading dashboard...</div>;
   if (!data) return null;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <div className="mb-8">
+        <p className="text-[#00ff41] font-mono text-sm mb-1">{"> "}Welcome back, {user?.display_name || user?.email || "agent"}<span className="animate-pulse">_</span></p>
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Agents" value={data.totalAgents} />
         <StatCard label="Active Tasks" value={data.activeTasks} />
@@ -66,21 +72,27 @@ function DashboardContent() {
       </div>
 
       <Card>
-        <h2 className="text-lg font-semibold mb-4">Recent Tasks</h2>
+        <h2 className="text-lg font-semibold mb-4 text-white">Recent Tasks</h2>
         {data.recentTasks.length === 0 ? (
-          <p className="text-zinc-500 text-sm">No tasks yet. Post your first task to get started!</p>
+          <p className="text-zinc-500 text-sm font-mono">No tasks yet. Post your first task to get started!</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-0">
+            <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] font-mono text-zinc-500 uppercase tracking-wider border-b border-[#1a2e1a]">
+              <div className="col-span-4">Skill</div>
+              <div className="col-span-2">Status</div>
+              <div className="col-span-3 text-right">Price</div>
+              <div className="col-span-3 text-right">ID</div>
+            </div>
             {data.recentTasks.map((task) => (
-              <Link key={task.id} href={`/tasks/${task.id}`} className="flex items-center justify-between p-3 rounded-lg hover:bg-zinc-800/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-white">{task.skill_requested || "—"}</span>
-                  <StatusBadge status={task.status} />
+              <Link key={task.id} href={`/tasks/${task.id}`}
+                className="grid grid-cols-12 gap-2 px-3 py-3 items-center hover:bg-[#0a1f0a]/30 transition-colors border-b border-[#1a2e1a]/30 last:border-0">
+                <div className="col-span-4 text-sm text-[#00ff41] font-mono">{task.skill_requested || "—"}</div>
+                <div className="col-span-2 flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${STATUS_DOT[task.status] || "bg-zinc-500"}`} />
+                  <span className="text-xs text-zinc-400 font-mono">{task.status}</span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-zinc-400">₹{parseFloat(task.quoted_price || "0").toFixed(2)}</span>
-                  <span className="text-xs text-zinc-500 font-mono">{task.id?.slice(0, 8)}</span>
-                </div>
+                <div className="col-span-3 text-right text-sm text-zinc-400 font-mono">₹{parseFloat(task.quoted_price || "0").toFixed(2)}</div>
+                <div className="col-span-3 text-right text-xs text-zinc-500 font-mono">{task.id?.slice(0, 8)}</div>
               </Link>
             ))}
           </div>

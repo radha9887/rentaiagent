@@ -1,34 +1,130 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { ProtectedRoute } from "../../lib/auth-context";
-import { getTask, rateTask } from "../../lib/api";
-import { Card, StatusBadge, Button } from "../../lib/ui";
+import { getTask, rateTask, getTaskChain } from "../../lib/api";
+import { timeAgo } from "../../lib/components";
 
 interface TaskData {
   id: string; skill_requested: string; description?: string; status: string;
   quoted_price: string; actual_price?: string; platform_fee?: string; currency: string;
-  provider_agent_id: string; requester_user_id: string;
+  provider_agent_id: string; provider_agent_name?: string; provider_agent_slug?: string;
+  requester_user_id: string;
   payload?: Record<string, unknown>; result?: Record<string, unknown>;
   error_message?: string;
-  created_at: string; completed_at?: string;
+  created_at: string; completed_at?: string; escrowed_at?: string; processing_at?: string;
 }
+
+interface ChainNode {
+  id: string;
+  skill: string;
+  agent_name?: string;
+  cost?: string;
+  status: string;
+  duration_s?: number;
+  children?: ChainNode[];
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  completed: "text-emerald-400", pending: "text-yellow-400", processing: "text-blue-400",
+  failed: "text-red-400", timeout: "text-red-400", escrowed: "text-yellow-400",
+};
+
+const ACTIVE_STATUSES = ["pending", "escrowed", "processing", "assigned"];
 
 function TaskDetailContent() {
   const { id } = useParams();
   const [task, setTask] = useState<TaskData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [rated, setRated] = useState(false);
   const [rateError, setRateError] = useState("");
+  const [payloadOpen, setPayloadOpen] = useState(false);
+  const [chain, setChain] = useState<ChainNode | null>(null);
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    if (id) getTask(id as string).then(setTask).catch(() => null).finally(() => setLoading(false));
+  const fetchTask = useCallback(async () => {
+    if (!id) return;
+    try {
+      const data = await getTask(id as string);
+      setTask(data);
+      if (!ACTIVE_STATUSES.includes(data.status) && intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
   }, [id]);
 
+  useEffect(() => {
+    fetchTask();
+    if (id) {
+      getTaskChain(id as string).then(setChain).catch(() => {});
+    }
+    intervalRef.current = setInterval(fetchTask, 2000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [fetchTask, id]);
+
+  const toggleNode = (nodeId: string) => {
+    setExpandedNodes(prev => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) next.delete(nodeId); else next.add(nodeId);
+      return next;
+    });
+  };
+
+  function calcChainTotal(node: ChainNode): number {
+    const self = parseFloat(node.cost || "0");
+    const childTotal = (node.children || []).reduce((sum, c) => sum + calcChainTotal(c), 0);
+    return self + childTotal;
+  }
+
+  function calcChainTime(node: ChainNode): number {
+    const self = node.duration_s || 0;
+    const childMax = (node.children || []).reduce((m, c) => Math.max(m, calcChainTime(c)), 0);
+    return self + childMax;
+  }
+
+  function renderChainNode(node: ChainNode, depth: number, isLast: boolean): React.ReactNode {
+    const prefix = depth === 0 ? "" : isLast ? "└── " : "├── ";
+    const statusIcon = node.status === "completed" ? "✓" : node.status === "failed" ? "✗" : "…";
+    const statusColor = STATUS_COLORS[node.status] || "text-zinc-400";
+    const cost = node.cost ? `₹${parseFloat(node.cost).toFixed(2)}` : "";
+    const expanded = expandedNodes.has(node.id);
+
+    return (
+      <div key={node.id}>
+        <button
+          onClick={() => toggleNode(node.id)}
+          className="flex items-center gap-2 text-sm font-mono hover:bg-[#0a1f0a]/30 px-2 py-1 rounded w-full text-left"
+          style={{ paddingLeft: `${depth * 24 + 8}px` }}
+        >
+          <span className="text-zinc-600">{prefix}</span>
+          <span className={statusColor}>●</span>
+          <span className="text-white">{node.skill}</span>
+          {node.agent_name && <span className="text-zinc-500">({node.agent_name})</span>}
+          {cost && <><span className="text-zinc-600">───</span><span className="text-zinc-400">{cost}</span></>}
+          <span className="text-zinc-600">───</span>
+          <span className={statusColor}>{node.status} {statusIcon}</span>
+          {node.duration_s != null && <span className="text-zinc-600 text-xs">{node.duration_s.toFixed(1)}s</span>}
+        </button>
+        {expanded && (
+          <div className="ml-8 text-xs text-zinc-500 font-mono px-2 py-1" style={{ paddingLeft: `${depth * 24 + 32}px` }}>
+            ID: {node.id}
+          </div>
+        )}
+        {node.children?.map((child, i) => renderChainNode(child, depth + 1, i === (node.children!.length - 1)))}
+      </div>
+    );
+  }
+
   const handleRate = async () => {
+    if (rating === 0) { setRateError("Select a rating"); return; }
     setRateError("");
     try {
       await rateTask(id as string, rating, feedback || undefined);
@@ -38,89 +134,156 @@ function TaskDetailContent() {
     }
   };
 
-  if (loading) return <p className="text-zinc-500">Loading...</p>;
-  if (!task) return <p className="text-zinc-400">Task not found</p>;
+  if (loading) return <div className="max-w-3xl"><p className="text-zinc-500 font-mono">Loading task...</p></div>;
+  if (!task) return <div className="max-w-3xl"><p className="text-zinc-400 font-mono">Task not found</p></div>;
+
+  const price = parseFloat(task.quoted_price || "0");
+  const fee = parseFloat(task.platform_fee || "0") || price * 0.15;
+  const totalCost = price + fee;
+  const curr = task.currency === "INR" ? "₹" : "$";
+  const durationMs = task.completed_at && task.created_at ? new Date(task.completed_at).getTime() - new Date(task.created_at).getTime() : null;
+  const isActive = ACTIVE_STATUSES.includes(task.status);
+
+  const timeline = [
+    { label: "Created", time: task.created_at, done: true },
+    { label: "Escrowed", time: task.escrowed_at || (["escrowed", "processing", "completed"].includes(task.status) ? task.created_at : null), done: ["escrowed", "processing", "completed", "assigned"].includes(task.status), note: `${curr}${price.toFixed(2)} held` },
+    { label: "Processing", time: task.processing_at || (["processing", "completed"].includes(task.status) ? task.created_at : null), done: ["processing", "completed"].includes(task.status), note: "dispatched to agent" },
+    { label: task.status === "failed" ? "Failed" : "Completed", time: task.completed_at, done: task.status === "completed" || task.status === "failed", note: durationMs ? `${(durationMs / 1000).toFixed(1)}s` : undefined },
+  ];
 
   return (
-    <div className="max-w-3xl">
-      <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-2xl font-bold">{task.skill_requested || "Task"}</h1>
-        <StatusBadge status={task.status} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <Card>
-          <p className="text-sm text-zinc-400">Task ID</p>
-          <p className="text-sm font-mono text-white mt-1">{task.id}</p>
-        </Card>
-        <Card>
-          <p className="text-sm text-zinc-400">Quoted Price</p>
-          <p className="text-lg font-semibold text-white mt-1">₹{parseFloat(task.quoted_price || "0").toFixed(2)}</p>
-          {task.actual_price && (
-            <p className="text-xs text-zinc-500 mt-1">Actual: ₹{parseFloat(task.actual_price).toFixed(2)}</p>
+    <div className="max-w-3xl space-y-6">
+      {/* Header */}
+      <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <h1 className="text-lg font-bold text-white font-mono">Task</h1>
+          <span className="text-xs text-zinc-500 font-mono">{task.id.slice(0, 12)}...</span>
+          {isActive && <span className="ml-auto flex items-center gap-1.5 text-xs text-yellow-400"><span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />Live</span>}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-zinc-400">Skill:</span><span className="text-[#00ff41] font-mono">{task.skill_requested}</span>
+          <span className="text-zinc-600">·</span>
+          <span className="text-zinc-400">Agent:</span>
+          {task.provider_agent_slug ? (
+            <Link href={`/agents/${task.provider_agent_slug}`} className="text-[#00ff41] font-mono hover:underline">@{task.provider_agent_slug}</Link>
+          ) : (
+            <span className="text-zinc-500 font-mono text-xs">{task.provider_agent_id.slice(0, 8)}</span>
           )}
-        </Card>
+          <span className="text-zinc-600">·</span>
+          <span className={`font-mono font-semibold ${STATUS_COLORS[task.status] || "text-zinc-400"}`}>● {task.status}</span>
+        </div>
+        <div className="text-xs text-zinc-500 mt-2">
+          Posted {timeAgo(task.created_at)}
+          {durationMs && <> · Completed in {(durationMs / 1000).toFixed(1)}s</>}
+        </div>
       </div>
 
-      <Card className="mb-6">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div><span className="text-zinc-400">Provider Agent:</span> <span className="text-white ml-2 font-mono text-xs">{task.provider_agent_id?.slice(0, 8) || "—"}</span></div>
-          <div><span className="text-zinc-400">Currency:</span> <span className="text-white ml-2">{task.currency}</span></div>
-          <div><span className="text-zinc-400">Created:</span> <span className="text-white ml-2">{new Date(task.created_at).toLocaleString()}</span></div>
-          <div><span className="text-zinc-400">Completed:</span> <span className="text-white ml-2">{task.completed_at ? new Date(task.completed_at).toLocaleString() : "—"}</span></div>
-          {task.platform_fee && (
-            <div><span className="text-zinc-400">Platform Fee:</span> <span className="text-white ml-2">₹{parseFloat(task.platform_fee).toFixed(2)}</span></div>
+      {/* Timeline */}
+      <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-6">
+        <h2 className="text-sm text-zinc-400 font-mono mb-4">// Status Timeline</h2>
+        <div className="space-y-3">
+          {timeline.map((step, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <div className="flex flex-col items-center">
+                <span className={`w-3 h-3 rounded-full border-2 ${step.done ? "bg-[#00ff41] border-[#00ff41]" : "bg-transparent border-zinc-600"}`} />
+                {i < timeline.length - 1 && <div className={`w-0.5 h-6 ${step.done ? "bg-[#00ff41]/30" : "bg-zinc-700"}`} />}
+              </div>
+              <div className="flex-1 -mt-0.5">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-mono ${step.done ? "text-white" : "text-zinc-500"}`}>{step.label}</span>
+                  {step.done && <span className="text-[#00ff41] text-xs">✓</span>}
+                  {step.time && <span className="text-xs text-zinc-600 font-mono">{new Date(step.time).toLocaleTimeString()}</span>}
+                </div>
+                {step.note && step.done && <span className="text-xs text-zinc-500">({step.note})</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Task Chain */}
+      {chain && chain.children && chain.children.length > 0 && (
+        <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-6">
+          <h2 className="text-sm text-zinc-400 font-mono mb-4">// Task Chain</h2>
+          <div className="space-y-0">
+            {renderChainNode(chain, 0, true)}
+          </div>
+          <div className="mt-4 pt-3 border-t border-[#1a2e1a] flex items-center gap-6 text-sm font-mono">
+            <span className="text-zinc-400">Total chain cost: <span className="text-[#00ff41] font-semibold">₹{calcChainTotal(chain).toFixed(2)}</span></span>
+            <span className="text-zinc-400">Total chain time: <span className="text-[#00ff41] font-semibold">{calcChainTime(chain).toFixed(1)}s</span></span>
+          </div>
+        </div>
+      )}
+
+      {/* Payload */}
+      {task.payload && Object.keys(task.payload).length > 0 && (
+        <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-6">
+          <button onClick={() => setPayloadOpen(!payloadOpen)} className="flex items-center gap-2 text-sm text-zinc-400 font-mono w-full text-left">
+            <span className="text-zinc-600">{payloadOpen ? "▼" : "▶"}</span> // Payload (what you sent)
+          </button>
+          {payloadOpen && (
+            <pre className="mt-3 bg-[#09090b] border border-[#1a2e1a] rounded-lg p-4 text-xs font-mono text-[#00ff41] overflow-x-auto">
+              {JSON.stringify(task.payload, null, 2)}
+            </pre>
           )}
         </div>
-        {task.description && (
-          <div className="mt-4 pt-4 border-t border-zinc-800">
-            <p className="text-sm text-zinc-400 mb-1">Description</p>
-            <p className="text-sm text-white">{task.description}</p>
-          </div>
-        )}
-      </Card>
-
-      {task.payload && Object.keys(task.payload).length > 0 && (
-        <Card className="mb-6">
-          <h2 className="text-sm text-zinc-400 mb-2">Payload</h2>
-          <pre className="bg-black/50 rounded-lg p-4 text-xs font-mono text-zinc-300 overflow-x-auto">
-            {JSON.stringify(task.payload, null, 2)}
-          </pre>
-        </Card>
       )}
 
+      {/* Result */}
       {task.result && Object.keys(task.result).length > 0 && (
-        <Card className="mb-6">
-          <h2 className="text-sm text-zinc-400 mb-2">Result</h2>
-          <pre className="bg-black/50 rounded-lg p-4 text-xs font-mono text-zinc-300 overflow-x-auto">
+        <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-6">
+          <h2 className="text-sm text-zinc-400 font-mono mb-3">// Result (what you got)</h2>
+          <pre className="bg-[#09090b] border border-[#1a2e1a] rounded-lg p-4 text-xs font-mono text-[#00ff41] overflow-x-auto">
             {JSON.stringify(task.result, null, 2)}
           </pre>
-        </Card>
+        </div>
       )}
 
+      {/* Error */}
       {task.error_message && (
-        <Card className="mb-6">
-          <h2 className="text-sm text-red-400 mb-2">Error</h2>
-          <p className="text-sm text-red-300">{task.error_message}</p>
-        </Card>
+        <div className="border border-red-500/20 bg-red-500/5 rounded-xl p-6">
+          <h2 className="text-sm text-red-400 font-mono mb-2">// Error</h2>
+          <p className="text-sm text-red-300 font-mono">{task.error_message}</p>
+        </div>
       )}
 
+      {/* Cost Breakdown */}
+      <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-6">
+        <h2 className="text-sm text-zinc-400 font-mono mb-3">// Cost Breakdown</h2>
+        <div className="space-y-2 text-sm font-mono">
+          <div className="flex justify-between"><span className="text-zinc-400">Task price</span><span className="text-white">{curr}{price.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span className="text-zinc-400">Platform fee (15%)</span><span className="text-white">{curr}{fee.toFixed(2)}</span></div>
+          <div className="flex justify-between border-t border-[#1a2e1a] pt-2"><span className="text-zinc-400">Total charged</span><span className="text-[#00ff41] font-semibold">{curr}{totalCost.toFixed(2)}</span></div>
+        </div>
+      </div>
+
+      {/* Rating */}
       {task.status === "completed" && !rated && (
-        <Card>
-          <h2 className="text-lg font-semibold mb-3">Rate this task</h2>
-          {rateError && <p className="text-red-400 text-sm mb-2">{rateError}</p>}
-          <div className="flex items-center gap-2 mb-3">
-            {[1, 2, 3, 4, 5].map((v) => (
-              <button key={v} onClick={() => setRating(v)}
-                className={`text-2xl ${v <= rating ? "text-yellow-400" : "text-zinc-600"}`}>★</button>
+        <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-6">
+          <h2 className="text-sm text-zinc-400 font-mono mb-4">// Rate This Task</h2>
+          {rateError && <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg p-3 mb-3">{rateError}</div>}
+          <div className="flex items-center gap-1 mb-4">
+            {[1, 2, 3, 4, 5].map(v => (
+              <button key={v} onClick={() => setRating(v)} onMouseEnter={() => setHoverRating(v)} onMouseLeave={() => setHoverRating(0)}
+                className={`text-3xl transition-colors ${v <= (hoverRating || rating) ? "text-yellow-400" : "text-zinc-700"} hover:scale-110`}>★</button>
             ))}
           </div>
-          <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Optional feedback..."
-            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white mb-3" rows={2} />
-          <Button onClick={handleRate}>Submit Rating</Button>
-        </Card>
+          <textarea value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="Optional feedback..."
+            rows={2} className="w-full bg-[#09090b] border border-[#1a2e1a] rounded-lg px-3 py-2 text-sm text-[#00ff41] font-mono placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#00ff41]/50 mb-3" />
+          <button onClick={handleRate} className="px-5 py-2.5 bg-[#00ff41] text-black font-semibold rounded-lg text-sm hover:bg-[#00ff41]/90 transition-colors">
+            Submit Rating
+          </button>
+        </div>
       )}
-      {rated && <Card><p className="text-emerald-400">✓ Rating submitted!</p></Card>}
+      {rated && (
+        <div className="border border-[#00ff41]/20 bg-[#00ff41]/5 rounded-xl p-6 text-center">
+          <p className="text-[#00ff41] font-mono">✓ Rating submitted — thank you!</p>
+        </div>
+      )}
+
+      <div className="text-center">
+        <Link href="/tasks" className="text-sm text-zinc-500 hover:text-[#00ff41] transition-colors">← Back to tasks</Link>
+      </div>
     </div>
   );
 }

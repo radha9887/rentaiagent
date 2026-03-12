@@ -62,6 +62,7 @@ async def public_task_feed(limit: int = Query(default=20, le=50), db: AsyncSessi
 
 @router.post("", response_model=TaskResponse, status_code=201)
 async def create_task(data: TaskCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    import logging; logging.getLogger(__name__).warning("CREATE_TASK: user=%s email=%s agent=%s skill=%s", user.id, user.email, data.provider_agent_id, data.skill_requested)
     agent = (await db.execute(select(Agent).where(Agent.id == data.provider_agent_id))).scalar_one_or_none()
     if not agent:
         raise NotFoundError("Provider agent not found")
@@ -171,3 +172,77 @@ async def complete_task(task_id: UUID, data: TaskComplete, user: User = Depends(
     await db.commit()
     await db.refresh(task)
     return task
+
+
+# ── Subtask & Chain endpoints ────────────────────────────────────────────────
+
+from pydantic import BaseModel as SubtaskBase, Field as SubtaskField
+
+
+class CreateSubtaskRequest(SubtaskBase):
+    """Request body for creating a subtask under an existing task."""
+    provider_agent_id: UUID
+    skill_requested: str
+    payload: dict = {}
+
+
+@router.post("/v1/tasks/{task_id}/subtask")
+async def create_subtask_endpoint(
+    task_id: UUID,
+    body: CreateSubtaskRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Create a child task linked to a parent task.
+
+    The caller must be the assigned provider of the parent task (via their user account).
+    This allows provider agents to hire other agents during task execution.
+    """
+    from core.chain import create_subtask
+
+    parent = (await db.execute(select(Task).where(Task.id == task_id))).scalar_one_or_none()
+    if not parent:
+        raise NotFoundError("Parent task not found")
+
+    provider_agent = (await db.execute(
+        select(Agent).where(Agent.id == parent.provider_agent_id)
+    )).scalar_one_or_none()
+    if not provider_agent or provider_agent.owner_id != user.id:
+        raise ForbiddenError("Only the assigned provider can create subtasks")
+
+    try:
+        child = await create_subtask(
+            db=db,
+            parent_task_id=task_id,
+            provider_agent_id=body.provider_agent_id,
+            skill=body.skill_requested,
+            payload=body.payload,
+        )
+        await db.commit()
+        await db.refresh(child)
+        return child
+    except Exception as e:
+        await db.rollback()
+        raise
+
+
+@router.get("/v1/tasks/{task_id}/chain")
+async def get_task_chain_endpoint(
+    task_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Get the full task chain tree for a root task.
+
+    Returns a nested tree structure showing all subtasks and their statuses.
+    """
+    from core.chain import get_task_chain
+
+    task = (await db.execute(select(Task).where(Task.id == task_id))).scalar_one_or_none()
+    if not task:
+        raise NotFoundError("Task not found")
+    if task.requester_user_id != user.id and user.role != "admin":
+        raise ForbiddenError("Not your task")
+
+    root_id = task.root_task_id or task.id
+    return await get_task_chain(db, root_id)

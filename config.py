@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     JWT_SECRET: str = "change-me-in-production"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     RAZORPAY_KEY_ID: str = ""
     RAZORPAY_KEY_SECRET: str = ""
@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     HMAC_SECRET: str = "change-me-hmac-secret"
     HEALTH_CHECK_TIMEOUT_SECONDS: int = 10
     SIMULATION_MODE: bool = True
+    MAX_CHAIN_DEPTH: int = 5
+    MAX_CHAIN_BREADTH: int = 10
+    WEBHOOK_TIMEOUT_SECONDS: int = 30
+    WEBHOOK_MAX_RETRIES: int = 3
+    EXTERNAL_AGENT_HEALTH_INTERVAL_MINUTES: int = 60
 
     model_config = {"env_prefix": "RAA_", "env_file": ".env"}
 
