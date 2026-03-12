@@ -56,8 +56,9 @@ async def agent_card(slug: str, db: AsyncSession = Depends(get_db)):
     if agent.stats:
         stats_ext = {
             "total_tasks": agent.stats.total_tasks,
-            "success_rate": float(agent.stats.success_rate) if agent.stats.success_rate else None,
-            "avg_latency_ms": float(agent.stats.avg_latency_ms) if agent.stats.avg_latency_ms else None,
+            "completed_tasks": agent.stats.completed_tasks,
+            "avg_rating": agent.stats.avg_rating,
+            "avg_response_ms": agent.stats.avg_response_ms,
         }
 
     card = {

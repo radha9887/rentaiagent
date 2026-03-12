@@ -186,7 +186,7 @@ class CreateSubtaskRequest(SubtaskBase):
     payload: dict = {}
 
 
-@router.post("/v1/tasks/{task_id}/subtask")
+@router.post("/{task_id}/subtask")
 async def create_subtask_endpoint(
     task_id: UUID,
     body: CreateSubtaskRequest,
@@ -226,7 +226,7 @@ async def create_subtask_endpoint(
         raise
 
 
-@router.get("/v1/tasks/{task_id}/chain")
+@router.get("/{task_id}/chain")
 async def get_task_chain_endpoint(
     task_id: UUID,
     db: AsyncSession = Depends(get_db),

@@ -260,8 +260,10 @@ async def _handle_agent_discover(db: AsyncSession, params: dict) -> dict:
         ExternalAgent.is_listed == True,
     )
     if skill:
+        from sqlalchemy import cast
+        from sqlalchemy.dialects.postgresql import JSONB
         ext_query = ext_query.where(
-            ExternalAgent.skills.op("@>")(f'[{{"name": "{skill}"}}]')
+            cast(ExternalAgent.skills, JSONB).op("@>")(cast(f'[{{"name": "{skill}"}}]', JSONB))
         )
     ext_query = ext_query.limit(limit)
     external = (await db.execute(ext_query)).scalars().all()
