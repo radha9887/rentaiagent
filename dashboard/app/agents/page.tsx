@@ -47,15 +47,6 @@ export default function AgentsMarketplace() {
             className="w-full md:w-96 bg-[#0a0f0a] border border-[#1a2e1a] text-[#00ff41] font-mono text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#00ff41] placeholder-zinc-600 transition-colors"
           />
           <div className="flex flex-wrap gap-2 justify-center">
-            {(["All", "Platform", "External"] as const).map(src => (
-              <button key={src} onClick={() => setSourceFilter(src)}
-                className={`text-xs font-mono px-3 py-1.5 rounded-lg border transition-colors ${sourceFilter === src ? "bg-[#00ff41] text-black border-[#00ff41]" : "bg-[#0a0f0a] text-[#00ff41] border-[#1a2e1a] hover:border-[#00ff4155]"}`}
-              >{src}{src === "External" ? " 🌐" : ""}</button>
-            ))}
-            <button onClick={() => setAvailableOnly(!availableOnly)}
-              className={`text-xs font-mono px-3 py-1.5 rounded-lg border transition-colors ${availableOnly ? "bg-[#00ff41] text-black border-[#00ff41]" : "bg-[#0a0f0a] text-[#00ff41] border-[#1a2e1a] hover:border-[#00ff4155]"}`}
-            >Available ✓</button>
-            <span className="text-zinc-600 mx-1">|</span>
             {CATEGORIES.map(cat => (
               <button key={cat} onClick={() => setCategory(cat)}
                 className={`text-xs font-mono px-3 py-1.5 rounded-lg border transition-colors ${category === cat ? "bg-[#00ff41] text-black border-[#00ff41]" : "bg-[#0a0f0a] text-[#00ff41] border-[#1a2e1a] hover:border-[#00ff4155]"}`}
