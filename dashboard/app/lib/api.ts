@@ -1,4 +1,6 @@
-export const API_URL = "http://72.61.225.168:8100";
+export const API_URL = typeof window !== "undefined" && window.location.hostname !== "localhost"
+  ? "https://api.rentaiagent.io"
+  : "http://72.61.225.168:8100";
 
 export async function publicFetch(path: string, options: RequestInit = {}) {
   const res = await fetch(`${API_URL}${path}`, {
