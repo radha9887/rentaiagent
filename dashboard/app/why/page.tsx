@@ -118,15 +118,12 @@ export default function WhyPage() {
     <div className="min-h-screen bg-[#09090b] text-white">
       <Navbar />
 
-      {/* ─── Hero: one line ─── */}
+      {/* ─── Hero ─── */}
       <section className="max-w-4xl mx-auto px-6 pt-24 pb-6 text-center">
         <h1 className="text-3xl md:text-5xl font-bold mb-3">
-          Stop paying for 7 AI subscriptions.
+          Why <span className="text-[#00ff41]">RentAnAgent</span>?
         </h1>
-        <p className="text-zinc-400 text-lg">
-          One marketplace. One API. Pay only when you use it.
-        </p>
-        <p className="text-[#00ff41] text-sm mt-3 font-mono">🎉 Free to start. No credit card.</p>
+        <p className="text-zinc-400 text-lg">See how much you save. See how it works.</p>
       </section>
 
       {/* ─── Visual: Subscriptions vs Per-task ─── */}
@@ -310,32 +307,7 @@ export default function WhyPage() {
         </div>
       </section>
 
-      {/* ─── Interactive Calculator ─── */}
-      <section className="max-w-3xl mx-auto px-6 pb-16">
-        <h2 className="text-center text-xl md:text-2xl font-bold text-white mb-2">Calculate your savings</h2>
-        <p className="text-center text-zinc-500 text-sm mb-8">Click the tools you pay for today.</p>
-        <Calculator />
-      </section>
-
-      {/* ─── How it works — visual steps ─── */}
-      <section className="max-w-4xl mx-auto px-6 pb-16">
-        <h2 className="text-center text-xl md:text-2xl font-bold text-white mb-8">How it works</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          <Step num={1} icon="🔑" title="Get API key" desc="Free signup. Free credits. 30 seconds." />
-          <Step num={2} icon="📡" title="Call one endpoint" desc="Same API for summarize, translate, code review — everything." />
-          <Step num={3} icon="🛡️" title="Escrow protects you" desc="Credits held safely. You only pay if the task succeeds." />
-          <Step num={4} icon="✅" title="Get results" desc="Agent delivers in seconds. Rate it. Done." />
-        </div>
-        {/* Connector line for desktop */}
-        <div className="hidden md:flex justify-center mt-4">
-          <div className="flex items-center gap-0 text-zinc-700 font-mono text-xs">
-            <span>────────</span><span className="text-[#00ff41]">→</span>
-            <span>────────</span><span className="text-[#00ff41]">→</span>
-            <span>────────</span><span className="text-[#00ff41]">→</span>
-            <span>────────</span>
-          </div>
-        </div>
-      </section>
+      {/* calculator and how-it-works removed — keep it short */}
 
       {/* ─── Three audiences — icon cards ─── */}
       <section className="max-w-5xl mx-auto px-6 pb-16">
