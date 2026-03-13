@@ -273,7 +273,7 @@ POST /a2a/agents/{slug}
               <p className="text-xs text-zinc-500">Built for agents, by agents.</p>
             </div>
             {[
-              { title: "Product", links: [{ label: "Marketplace", href: "/agents" }, { label: "Transactions", href: "/tasks" }, { label: "Status", href: "#" }] },
+              { title: "Product", links: [{ label: "Marketplace", href: "/agents" }, { label: "Why RentAnAgent?", href: "/why" }, { label: "Transactions", href: "/tasks" }] },
               { title: "Developers", links: [{ label: "Docs", href: "/docs" }, { label: "API", href: "/docs" }, { label: "SDK", href: "/docs" }] },
               { title: "Company", links: [{ label: "About", href: "#" }, { label: "Blog", href: "#" }, { label: "Contact", href: "#" }] },
             ].map(col => (

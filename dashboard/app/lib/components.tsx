@@ -159,7 +159,6 @@ export function Navbar() {
   const isActive = (path: string) => pathname === path;
 
   const navLinks = [
-    { href: "/why", label: "Why" },
     { href: "/agents", label: "Browse" },
     { href: "/tasks", label: "Transactions" },
     { href: "/docs", label: "Docs" },
