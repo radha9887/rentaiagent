@@ -139,6 +139,7 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 50);
@@ -152,10 +153,21 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", h);
   }, []);
 
+  // Close mobile menu on route change
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
+
   const isActive = (path: string) => pathname === path;
 
+  const navLinks = [
+    { href: "/why", label: "Why" },
+    { href: "/agents", label: "Browse" },
+    { href: "/tasks", label: "Transactions" },
+    { href: "/docs", label: "Docs" },
+    { href: "/developers", label: "Developers" },
+  ];
+
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? "bg-[#09090b]/95 backdrop-blur border-b border-zinc-800/50" : "bg-transparent"}`}>
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled || mobileOpen ? "bg-[#09090b]/95 backdrop-blur border-b border-zinc-800/50" : "bg-transparent"}`}>
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
@@ -163,27 +175,60 @@ export function Navbar() {
             <span className="font-bold text-white text-lg">RentAnAgent</span>
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
-            <Link href="/agents" className={`transition-colors ${isActive("/agents") ? "text-white" : "hover:text-white"}`}>Browse</Link>
-            <Link href="/tasks" className={`transition-colors ${isActive("/tasks") ? "text-white" : "hover:text-white"}`}>Transactions</Link>
-            <Link href="/docs" className={`transition-colors ${isActive("/docs") ? "text-white" : "hover:text-white"}`}>Docs</Link>
-            <Link href="/developers" className={`transition-colors ${isActive("/developers") ? "text-white" : "hover:text-white"}`}>Developers</Link>
+            {navLinks.map(l => (
+              <Link key={l.href} href={l.href} className={`transition-colors ${isActive(l.href) ? "text-white" : "hover:text-white"}`}>{l.label}</Link>
+            ))}
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {loggedIn ? (
-            <>
-              <span className="text-sm text-zinc-400">{userName}</span>
-              <Link href="/dashboard" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Dashboard →</Link>
-              <button onClick={() => { localStorage.removeItem("jwt"); localStorage.removeItem("user"); window.location.href = "/login"; }} className="text-sm text-zinc-500 hover:text-white transition-colors px-2 py-1.5">Logout</button>
-            </>
-          ) : (
-            <>
-              <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">Sign In</Link>
-              <Link href="/register" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Register →</Link>
-            </>
-          )}
+          {/* Desktop auth buttons */}
+          <div className="hidden md:flex items-center gap-3">
+            {loggedIn ? (
+              <>
+                <span className="text-sm text-zinc-400">{userName}</span>
+                <Link href="/dashboard" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Dashboard →</Link>
+                <button onClick={() => { localStorage.removeItem("jwt"); localStorage.removeItem("user"); window.location.href = "/login"; }} className="text-sm text-zinc-500 hover:text-white transition-colors px-2 py-1.5">Logout</button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">Sign In</Link>
+                <Link href="/register" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Register →</Link>
+              </>
+            )}
+          </div>
+          {/* Mobile hamburger */}
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-zinc-400 hover:text-white p-2" aria-label="Menu">
+            {mobileOpen ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+            )}
+          </button>
         </div>
       </div>
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="md:hidden bg-[#09090b]/98 backdrop-blur border-t border-zinc-800/50 px-6 pb-6 pt-2">
+          <div className="flex flex-col gap-1">
+            {navLinks.map(l => (
+              <Link key={l.href} href={l.href} className={`py-3 text-sm border-b border-zinc-800/30 transition-colors ${isActive(l.href) ? "text-[#00ff41]" : "text-zinc-400 hover:text-white"}`}>{l.label}</Link>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2 mt-4">
+            {loggedIn ? (
+              <>
+                <Link href="/dashboard" className="text-sm text-center text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-2.5 hover:bg-[#00ff41]/10 transition-colors">Dashboard →</Link>
+                <button onClick={() => { localStorage.removeItem("jwt"); localStorage.removeItem("user"); window.location.href = "/login"; }} className="text-sm text-zinc-500 hover:text-white transition-colors py-2">Logout</button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm text-center text-zinc-400 hover:text-white transition-colors py-2.5">Sign In</Link>
+                <Link href="/register" className="text-sm text-center text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-2.5 hover:bg-[#00ff41]/10 transition-colors">Register →</Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
