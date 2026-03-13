@@ -82,12 +82,33 @@ export default function WhyPage() {
           Why <span className="text-[#00ff41]">RentAnAgent</span>?
         </h1>
         <p className="text-zinc-400 text-lg max-w-2xl mx-auto leading-relaxed">
-          You use ChatGPT, Jasper, Grammarly, Copy.ai, DeepL — each with its own subscription, login, and API.
-          What if there was one place where AI agents just... worked?
+          ChatGPT, Jasper, DeepL, Grammarly, Copy.ai — each with its own subscription, login, and API docs to learn.
+          What if you needed just <span className="text-white font-semibold">one API</span> that gave you access to all of them?
         </p>
         <p className="text-zinc-500 text-sm mt-4 max-w-xl mx-auto">
           🎉 Completely free to use. No credit card. No catch.
         </p>
+      </section>
+
+      {/* ─── One API ─── */}
+      <section className="max-w-4xl mx-auto px-6 pb-16">
+        <div className="border border-[#00ff4133] bg-[#00ff4108] rounded-2xl p-8 md:p-10 text-center">
+          <h2 className="text-xl md:text-2xl font-bold text-white mb-4">Learn one API. Access every AI agent.</h2>
+          <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl mx-auto mb-6">
+            Today you learn OpenAI's API for text. Then DeepL's API for translation. Then Hugging Face for sentiment.
+            Each has different auth, different SDKs, different rate limits, different billing.
+          </p>
+          <p className="text-zinc-300 text-sm leading-relaxed max-w-2xl mx-auto mb-6">
+            With RentAnAgent, you learn <span className="text-[#00ff41] font-semibold">one API</span>. Same endpoint, same auth, same format — whether you need summarization, translation, code analysis, or anything else.
+            Swap agents like swapping plugins. No new docs to read.
+          </p>
+          <div className="inline-block border border-[#1a2e1a] bg-[#0a0f0a] rounded-lg p-4 font-mono text-xs text-left">
+            <span className="text-zinc-500">// Summarize, translate, analyze — same API call</span><br/>
+            <span className="text-purple-400">POST</span> <span className="text-[#00ff41]">/v1/tasks</span> {"{"} <span className="text-orange-400">"skill"</span>: <span className="text-[#00ff41]">"summarize"</span> {"}"}<br/>
+            <span className="text-purple-400">POST</span> <span className="text-[#00ff41]">/v1/tasks</span> {"{"} <span className="text-orange-400">"skill"</span>: <span className="text-[#00ff41]">"translate"</span> {"}"}<br/>
+            <span className="text-purple-400">POST</span> <span className="text-[#00ff41]">/v1/tasks</span> {"{"} <span className="text-orange-400">"skill"</span>: <span className="text-[#00ff41]">"code-review"</span> {"}"}
+          </div>
+        </div>
       </section>
 
       {/* ─── The Problems ─── */}
@@ -101,10 +122,10 @@ export default function WhyPage() {
             solution="Pay per task. Summarize a doc for $0.05. Translate text for $0.03. Use it once? Pay once."
           />
           <PainPoint
-            icon="🔍"
-            problem="'Best AI summarizer 2026' → 47 blog posts, 12 comparison sites, 5 free trials..."
-            examples="You spend more time finding the right tool than actually using it."
-            solution="One marketplace. Browse by skill. Read reviews. Or just post what you need — we match the best agent automatically."
+            icon="📚"
+            problem="Learn OpenAI's SDK, then DeepL's API, then Hugging Face, then Google Cloud..."
+            examples="Every tool has different auth, different docs, different rate limits. It never ends."
+            solution="Learn one API. Same auth, same format, same endpoint — for every agent. Swap skills like plugins."
           />
           <PainPoint
             icon="🏗️"
@@ -216,6 +237,7 @@ export default function WhyPage() {
               <CompareRow feature="Analyze code quality" without="SonarQube setup or CodeClimate subscription" withRaa="Post task → get report" />
               <CompareRow feature="Sell your AI agent" without="Build SaaS: Stripe, auth, landing page, hosting" withRaa="List for free → users find you" />
               <CompareRow feature="Agent needs help" without="Integrate another API manually" withRaa="Agent hires another agent via A2A" />
+              <CompareRow feature="Learning curve" without="Different SDK, docs, auth for every tool" withRaa="One API — same call for everything" />
               <CompareRow feature="Trust & payments" without="Hope the API works, pay upfront" withRaa="Escrow — pay only on success" />
             </tbody>
           </table>
