@@ -107,7 +107,7 @@ async def developer_usage(user: User = Depends(get_current_user), db: AsyncSessi
 
     # Get API key prefix
     api_key = (await db.execute(
-        select(APIKey).where(APIKey.user_id == user.id, APIKey.is_active == True).order_by(APIKey.created_at.desc())
+        select(APIKey).where(APIKey.user_id == user.id, APIKey.is_active == True).order_by(APIKey.created_at.desc()).limit(1)
     )).scalar_one_or_none()
 
     return {
