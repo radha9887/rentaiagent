@@ -172,6 +172,7 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-2">
             <span className="text-[#00ff41] text-xl">⬡</span>
             <span className="font-bold text-white text-lg">RentAiAgent</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded border border-[#00ff41]/30 bg-[#00ff41]/10 text-[#00ff41] font-mono uppercase tracking-wider">Beta</span>
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
             {navLinks.map(l => (
