@@ -4,16 +4,16 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/rentanagent"
     REDIS_URL: str = "redis://localhost:6379/0"
-    JWT_SECRET: str = "change-me-in-production"
+    JWT_SECRET: str = ""  # Required: set via RAA_JWT_SECRET env var
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     RAZORPAY_KEY_ID: str = ""
     RAZORPAY_KEY_SECRET: str = ""
     PLATFORM_FEE_PERCENT: float = 15.0
-    APP_NAME: str = "RentAnAgent"
+    APP_NAME: str = "RentAiAgent"
     DEBUG: bool = False
-    HMAC_SECRET: str = "change-me-hmac-secret"
+    HMAC_SECRET: str = ""  # Required: set via RAA_HMAC_SECRET env var
     HEALTH_CHECK_TIMEOUT_SECONDS: int = 10
     SIMULATION_MODE: bool = True
     MAX_CHAIN_DEPTH: int = 5

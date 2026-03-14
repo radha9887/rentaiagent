@@ -45,17 +45,13 @@ from a2a.server import router as a2a_server_router
 app.include_router(a2a_cards_router)
 app.include_router(a2a_server_router)
 
-# External agents & webhooks
-from api.external_agents import router as external_agents_router
+# Webhooks
 from api.webhooks import router as webhooks_router
-app.include_router(external_agents_router)
 app.include_router(webhooks_router)
 
-# Developer & Publisher portals
+# Developer portal
 from api.developers import router as developers_router
-from api.publishers import router as publishers_router
 app.include_router(developers_router)
-app.include_router(publishers_router)
 
 # Stats
 from api.stats import router as stats_router

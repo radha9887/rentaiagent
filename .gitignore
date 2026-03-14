@@ -1,3 +1,8 @@
 __pycache__/
 .env
+.env.local
 .venv/
+.next/
+node_modules/
+*.bak
+*.pyc
