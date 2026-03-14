@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
@@ -12,8 +12,9 @@ from models.credit import CreditAccount
 from models.agent import Agent, AgentSkill
 from models.rating import AgentStats
 from utils.hashing import hash_password, generate_api_key, hash_api_key
-from utils.errors import ConflictError, NotFoundError
+from utils.errors import ConflictError, NotFoundError, ValidationError as AppValidationError
 from api.deps import get_current_user
+import httpx
 
 router = APIRouter(prefix="/v1/publish", tags=["publishers"])
 
@@ -33,9 +34,10 @@ class PublishAgent(BaseModel):
     slug: str
     description: str = ""
     endpoint_url: str = ""
+    health_check_url: str = ""
     skills: List[SkillInput] = []
     price_per_task: float = 0.0
-    currency: str = "INR"
+    currency: str = "credits"
     max_concurrent_tasks: int = 10
 
 
@@ -79,10 +81,20 @@ async def publish_register(data: PublishRegister, db: AsyncSession = Depends(get
 
 @router.post("/agents")
 async def publish_agent(data: PublishAgent, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    # Enforce 20 agent limit
+    agent_count = (await db.execute(
+        select(func.count(Agent.id)).where(Agent.owner_id == user.id)
+    )).scalar() or 0
+    if agent_count >= 20:
+        raise AppValidationError("Maximum 20 agents per account. Contact support for higher limits.")
+
     # Check slug uniqueness
     existing = (await db.execute(select(Agent).where(Agent.slug == data.slug))).scalar_one_or_none()
     if existing:
         raise ConflictError(f"Agent slug '{data.slug}' already taken")
+
+    if not data.health_check_url or not data.health_check_url.startswith(("http://", "https://")):
+        raise AppValidationError("Health check URL is required and must be a valid HTTP/HTTPS URL")
 
     agent = Agent(
         owner_id=user.id,
@@ -94,6 +106,7 @@ async def publish_agent(data: PublishAgent, user: User = Depends(get_current_use
         pricing_model="per_task",
         price_per_task=Decimal(str(data.price_per_task)),
         currency=data.currency,
+        health_check_url=data.health_check_url,
         status="online",
         trust_tier="new",
         max_concurrent_tasks=data.max_concurrent_tasks,
@@ -107,6 +120,20 @@ async def publish_agent(data: PublishAgent, user: User = Depends(get_current_use
 
     stats = AgentStats(agent_id=agent.id)
     db.add(stats)
+
+    # Auto-verify: hit health endpoint
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(data.health_check_url)
+            if resp.status_code < 300:
+                agent.status = "online"
+                agent.health_status = "healthy"
+            else:
+                agent.status = "pending_verification"
+                agent.health_status = "unknown"
+    except Exception:
+        agent.status = "pending_verification"
+        agent.health_status = "unknown"
 
     await db.commit()
     await db.refresh(agent)

@@ -25,7 +25,7 @@ class Task(Base, TimestampMixin):
     quoted_price = Column(Numeric(12, 4), nullable=False)
     actual_price = Column(Numeric(12, 4), nullable=True)
     platform_fee = Column(Numeric(12, 4), nullable=True)
-    currency = Column(String(3), default="INR")
+    currency = Column(String(10), default="credits")
     result = Column(JSONB, nullable=True)
     result_size_bytes = Column(Integer, nullable=True)
     error_message = Column(Text, nullable=True)

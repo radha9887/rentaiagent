@@ -57,6 +57,10 @@ from api.publishers import router as publishers_router
 app.include_router(developers_router)
 app.include_router(publishers_router)
 
+# Stats
+from api.stats import router as stats_router
+app.include_router(stats_router)
+
 
 @app.get("/health")
 async def health():

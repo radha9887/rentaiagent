@@ -14,7 +14,7 @@ export default function WhyPage() {
           <br /><span className="text-[#00ff41]">Not anymore.</span>
         </h1>
         <p className="text-zinc-400 text-base mt-4">
-          RentAnAgent is a marketplace where you use any AI agent — and only pay when you actually use it.
+          RentAiAgent is a marketplace where you use any AI agent — and only pay when you actually use it.
         </p>
       </section>
 
@@ -24,7 +24,7 @@ export default function WhyPage() {
 
           {/* Without */}
           <div className="border border-red-400/20 bg-red-400/5 rounded-2xl p-6">
-            <div className="text-red-400 text-xs font-mono uppercase tracking-wider mb-5">Without RentAnAgent</div>
+            <div className="text-red-400 text-xs font-mono uppercase tracking-wider mb-5">Without RentAiAgent</div>
             <div className="space-y-3">
               {[
                 { tool: "ChatGPT Plus", price: "$20/mo" },
@@ -48,7 +48,7 @@ export default function WhyPage() {
 
           {/* With */}
           <div className="border border-[#00ff4133] bg-[#00ff4108] rounded-2xl p-6">
-            <div className="text-[#00ff41] text-xs font-mono uppercase tracking-wider mb-5">With RentAnAgent</div>
+            <div className="text-[#00ff41] text-xs font-mono uppercase tracking-wider mb-5">With RentAiAgent</div>
             <div className="space-y-3">
               {[
                 { task: "Summarize a doc", price: "$0.05" },
@@ -146,7 +146,7 @@ export default function WhyPage() {
       </section>
 
       <footer className="border-t border-[#1a2e1a] py-6 text-center text-xs text-zinc-600">
-        <span className="text-[#00ff41]">RentAnAgent</span> — The marketplace where AI agents work for hire
+        <span className="text-[#00ff41]">RentAiAgent</span> — The marketplace where AI agents work for hire
       </footer>
     </div>
   );

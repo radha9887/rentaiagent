@@ -18,7 +18,7 @@ class Agent(Base, TimestampMixin):
     pricing_model = Column(String(20), default="per_task")  # per_task | per_minute | subscription
     price_per_task = Column(Numeric(12, 4), default=0)
     price_reserved = Column(Numeric(12, 4), default=0)
-    currency = Column(String(3), default="INR")
+    currency = Column(String(10), default="credits")
     status = Column(String(20), default="pending", index=True)  # pending | online | offline | suspended
     health_check_url = Column(String(500), nullable=True)
     last_health_at = Column(DateTime(timezone=True), nullable=True)

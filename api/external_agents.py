@@ -101,7 +101,7 @@ async def register_external_agent(
     if pricing:
         ext.pricing_model = pricing.get("model", "per_task")
         ext.price_per_task = pricing.get("price_per_task")
-        ext.currency = pricing.get("currency", "INR")
+        ext.currency = pricing.get("currency", "credits")
 
     db.add(ext)
     await db.flush()

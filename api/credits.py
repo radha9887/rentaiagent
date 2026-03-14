@@ -37,7 +37,7 @@ async def get_balance(user: User = Depends(get_current_user), db: AsyncSession =
 @router.post("/topup", response_model=TopupResponse)
 async def topup(data: TopupRequest, user: User = Depends(get_current_user)):
     # Stub: would create Razorpay order here
-    return TopupResponse(razorpay_order_id="order_stub_" + str(user.id)[:8], amount=data.amount, currency="INR")
+    return TopupResponse(razorpay_order_id="order_stub_" + str(user.id)[:8], amount=data.amount, currency="credits")
 
 
 @router.get("/transactions", response_model=CursorPage[TransactionResponse])

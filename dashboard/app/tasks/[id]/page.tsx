@@ -5,14 +5,13 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ProtectedRoute } from "../../lib/auth-context";
 import { getTask, rateTask, getTaskChain } from "../../lib/api";
-import { timeAgo } from "../../lib/components";
+import { Navbar, timeAgo } from "../../lib/components";
 
 interface TaskData {
   id: string; skill_requested: string; description?: string; status: string;
-  quoted_price: string; actual_price?: string; platform_fee?: string; currency: string;
+  quoted_price: string; actual_price?: string; currency: string;
   provider_agent_id: string; provider_agent_name?: string; provider_agent_slug?: string;
   requester_user_id: string;
-  payload?: Record<string, unknown>; result?: Record<string, unknown>;
   error_message?: string;
   created_at: string; completed_at?: string; escrowed_at?: string; processing_at?: string;
 }
@@ -43,7 +42,6 @@ function TaskDetailContent() {
   const [feedback, setFeedback] = useState("");
   const [rated, setRated] = useState(false);
   const [rateError, setRateError] = useState("");
-  const [payloadOpen, setPayloadOpen] = useState(false);
   const [chain, setChain] = useState<ChainNode | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -94,7 +92,7 @@ function TaskDetailContent() {
     const prefix = depth === 0 ? "" : isLast ? "└── " : "├── ";
     const statusIcon = node.status === "completed" ? "✓" : node.status === "failed" ? "✗" : "…";
     const statusColor = STATUS_COLORS[node.status] || "text-zinc-400";
-    const cost = node.cost ? `₹${parseFloat(node.cost).toFixed(2)}` : "";
+    const cost = node.cost ? `${parseFloat(node.cost).toFixed(0)} credits` : "";
     const expanded = expandedNodes.has(node.id);
 
     return (
@@ -134,25 +132,22 @@ function TaskDetailContent() {
     }
   };
 
-  if (loading) return <div className="max-w-3xl"><p className="text-zinc-500 font-mono">Loading task...</p></div>;
-  if (!task) return <div className="max-w-3xl"><p className="text-zinc-400 font-mono">Task not found</p></div>;
+  if (loading) return <div className="max-w-3xl mx-auto px-6 pt-24 pb-16"><p className="text-zinc-500 font-mono">Loading task...</p></div>;
+  if (!task) return <div className="max-w-3xl mx-auto px-6 pt-24 pb-16"><p className="text-zinc-400 font-mono">Task not found</p></div>;
 
   const price = parseFloat(task.quoted_price || "0");
-  const fee = parseFloat(task.platform_fee || "0") || price * 0.15;
-  const totalCost = price + fee;
-  const curr = task.currency === "INR" ? "₹" : "$";
   const durationMs = task.completed_at && task.created_at ? new Date(task.completed_at).getTime() - new Date(task.created_at).getTime() : null;
   const isActive = ACTIVE_STATUSES.includes(task.status);
 
   const timeline = [
     { label: "Created", time: task.created_at, done: true },
-    { label: "Escrowed", time: task.escrowed_at || (["escrowed", "processing", "completed"].includes(task.status) ? task.created_at : null), done: ["escrowed", "processing", "completed", "assigned"].includes(task.status), note: `${curr}${price.toFixed(2)} held` },
-    { label: "Processing", time: task.processing_at || (["processing", "completed"].includes(task.status) ? task.created_at : null), done: ["processing", "completed"].includes(task.status), note: "dispatched to agent" },
+    { label: "Escrowed", time: task.escrowed_at || (["escrowed", "processing", "completed"].includes(task.status) ? task.created_at : null), done: ["escrowed", "processing", "completed", "assigned"].includes(task.status) },
+    { label: "Processing", time: task.processing_at || (["processing", "completed"].includes(task.status) ? task.created_at : null), done: ["processing", "completed"].includes(task.status) },
     { label: task.status === "failed" ? "Failed" : "Completed", time: task.completed_at, done: task.status === "completed" || task.status === "failed", note: durationMs ? `${(durationMs / 1000).toFixed(1)}s` : undefined },
   ];
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-3xl mx-auto px-6 pt-24 pb-16 space-y-6">
       {/* Header */}
       <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-6">
         <div className="flex items-center gap-2 mb-2">
@@ -209,33 +204,9 @@ function TaskDetailContent() {
             {renderChainNode(chain, 0, true)}
           </div>
           <div className="mt-4 pt-3 border-t border-[#1a2e1a] flex items-center gap-6 text-sm font-mono">
-            <span className="text-zinc-400">Total chain cost: <span className="text-[#00ff41] font-semibold">₹{calcChainTotal(chain).toFixed(2)}</span></span>
+            <span className="text-zinc-400">Total chain cost: <span className="text-[#00ff41] font-semibold">{calcChainTotal(chain).toFixed(0)} credits</span></span>
             <span className="text-zinc-400">Total chain time: <span className="text-[#00ff41] font-semibold">{calcChainTime(chain).toFixed(1)}s</span></span>
           </div>
-        </div>
-      )}
-
-      {/* Payload */}
-      {task.payload && Object.keys(task.payload).length > 0 && (
-        <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-6">
-          <button onClick={() => setPayloadOpen(!payloadOpen)} className="flex items-center gap-2 text-sm text-zinc-400 font-mono w-full text-left">
-            <span className="text-zinc-600">{payloadOpen ? "▼" : "▶"}</span> // Payload (what you sent)
-          </button>
-          {payloadOpen && (
-            <pre className="mt-3 bg-[#09090b] border border-[#1a2e1a] rounded-lg p-4 text-xs font-mono text-[#00ff41] overflow-x-auto">
-              {JSON.stringify(task.payload, null, 2)}
-            </pre>
-          )}
-        </div>
-      )}
-
-      {/* Result */}
-      {task.result && Object.keys(task.result).length > 0 && (
-        <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-6">
-          <h2 className="text-sm text-zinc-400 font-mono mb-3">// Result (what you got)</h2>
-          <pre className="bg-[#09090b] border border-[#1a2e1a] rounded-lg p-4 text-xs font-mono text-[#00ff41] overflow-x-auto">
-            {JSON.stringify(task.result, null, 2)}
-          </pre>
         </div>
       )}
 
@@ -247,14 +218,10 @@ function TaskDetailContent() {
         </div>
       )}
 
-      {/* Cost Breakdown */}
+      {/* Cost */}
       <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-6">
-        <h2 className="text-sm text-zinc-400 font-mono mb-3">// Cost Breakdown</h2>
-        <div className="space-y-2 text-sm font-mono">
-          <div className="flex justify-between"><span className="text-zinc-400">Task price</span><span className="text-white">{curr}{price.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span className="text-zinc-400">Platform fee (15%)</span><span className="text-white">{curr}{fee.toFixed(2)}</span></div>
-          <div className="flex justify-between border-t border-[#1a2e1a] pt-2"><span className="text-zinc-400">Total charged</span><span className="text-[#00ff41] font-semibold">{curr}{totalCost.toFixed(2)}</span></div>
-        </div>
+        <h2 className="text-sm text-zinc-400 font-mono mb-3">// Cost</h2>
+        <p className="text-sm font-mono text-white">Task cost: <span className="text-[#00ff41] font-semibold">{price.toFixed(0)} credits</span></p>
       </div>
 
       {/* Rating */}
@@ -289,5 +256,12 @@ function TaskDetailContent() {
 }
 
 export default function TaskDetailPage() {
-  return <ProtectedRoute><TaskDetailContent /></ProtectedRoute>;
+  return (
+    <div className="bg-[#09090b] min-h-screen">
+      <Navbar />
+      <ProtectedRoute>
+        <TaskDetailContent />
+      </ProtectedRoute>
+    </div>
+  );
 }

@@ -19,8 +19,8 @@ class AgentCreate(BaseModel):
     endpoint_type: str = "rest"
     pricing_model: str = "per_task"
     price_per_task: Decimal = Decimal("0")
-    currency: str = "INR"
-    health_check_url: Optional[str] = None
+    currency: str = "credits"
+    health_check_url: str
     version: Optional[str] = None
     framework: Optional[str] = None
     protocols: List[str] = []
@@ -44,6 +44,7 @@ class AgentUpdate(BaseModel):
     metadata_: Optional[Dict[str, Any]] = Field(default=None, alias="metadata")
     skills: Optional[List[SkillInput]] = None
     max_concurrent_tasks: Optional[int] = None
+    status: Optional[str] = None
 
 
 class SkillResponse(BaseModel):

@@ -30,7 +30,7 @@ class ExternalAgent(Base, TimestampMixin):
     is_listed = Column(Boolean, default=False)
     pricing_model = Column(String(20), default="per_task")
     price_per_task = Column(Numeric(12, 4), nullable=True)
-    currency = Column(String(3), default="INR")
+    currency = Column(String(10), default="credits")
     protocols = Column(ARRAY(String), nullable=True)
     skills = Column(JSONB, nullable=True)
     stats = Column(JSONB, default=lambda: {"total_tasks": 0, "completed": 0, "failed": 0, "avg_response_ms": 0, "success_rate": 0})

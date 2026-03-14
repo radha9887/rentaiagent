@@ -53,7 +53,7 @@ function PostTaskForm() {
   const price = parseFloat(selectedAgent?.price_per_task || "0");
   const fee = price * 0.15;
   const total = price + fee;
-  const curr = selectedAgent?.currency === "INR" ? "₹" : "$";
+  const curr = "";
 
   const filtered = agents.filter(a => {
     if (!search) return true;
@@ -131,7 +131,7 @@ function PostTaskForm() {
                       <div className="flex items-center gap-2 text-[10px] text-zinc-500">
                         <span className={TIER_COLORS[a.trust_tier?.toLowerCase() || "new"]}>{a.trust_tier || "new"}</span>
                         <span>·</span>
-                        <span>{a.currency === "INR" ? "₹" : "$"}{parseFloat(a.price_per_task || "0").toFixed(0)}</span>
+                        <span>{parseFloat(a.price_per_task || "0").toFixed(0)} credits</span>
                         {a.stats?.total_tasks ? <><span>·</span><span>{a.stats.total_tasks} tasks</span></> : null}
                       </div>
                       <div className="flex flex-wrap gap-1 mt-1.5">

@@ -93,7 +93,7 @@ export function AgentCard({ agent }: { agent: Agent }) {
       )}
       <div className="mt-auto pt-2 border-t border-[#1a2e1a] space-y-1.5">
         <div className="flex items-center gap-3 text-xs text-zinc-400">
-          <span>{agent.currency === "INR" ? "₹" : "$"}{price}/task</span>
+          <span>{price} credits/task</span>
           <span>·</span>
           <span>{tasks.toLocaleString()} tasks</span>
           {responseMs > 0 && <><span>·</span><span>⚡{(responseMs / 1000).toFixed(1)}s</span></>}
@@ -171,7 +171,7 @@ export function Navbar() {
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-[#00ff41] text-xl">⬡</span>
-            <span className="font-bold text-white text-lg">RentAnAgent</span>
+            <span className="font-bold text-white text-lg">RentAiAgent</span>
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
             {navLinks.map(l => (
@@ -185,7 +185,7 @@ export function Navbar() {
             {loggedIn ? (
               <>
                 <span className="text-sm text-zinc-400">{userName}</span>
-                <Link href="/dashboard" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Dashboard →</Link>
+                <Link href="/developers" className="text-sm text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-1.5 hover:bg-[#00ff41]/10 transition-colors">Console →</Link>
                 <button onClick={() => { localStorage.removeItem("jwt"); localStorage.removeItem("user"); window.location.href = "/login"; }} className="text-sm text-zinc-500 hover:text-white transition-colors px-2 py-1.5">Logout</button>
               </>
             ) : (
@@ -216,7 +216,7 @@ export function Navbar() {
           <div className="flex flex-col gap-2 mt-4">
             {loggedIn ? (
               <>
-                <Link href="/dashboard" className="text-sm text-center text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-2.5 hover:bg-[#00ff41]/10 transition-colors">Dashboard →</Link>
+                <Link href="/developers" className="text-sm text-center text-[#00ff41] border border-[#00ff41] rounded-lg px-4 py-2.5 hover:bg-[#00ff41]/10 transition-colors">Console →</Link>
                 <button onClick={() => { localStorage.removeItem("jwt"); localStorage.removeItem("user"); window.location.href = "/login"; }} className="text-sm text-zinc-500 hover:text-white transition-colors py-2">Logout</button>
               </>
             ) : (

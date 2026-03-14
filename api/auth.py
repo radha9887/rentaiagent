@@ -6,7 +6,7 @@ from uuid import UUID
 
 from db import get_db
 from models.user import User, APIKey
-from models.credit import CreditAccount
+from models.credit import CreditAccount, Transaction
 from schemas.user import UserRegister, UserLogin, TokenResponse, UserResponse, APIKeyCreate, APIKeyCreated, APIKeyResponse
 from schemas.common import MessageResponse
 from utils.hashing import hash_password, verify_password, generate_api_key, hash_api_key
@@ -31,8 +31,19 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
     api_key = APIKey(user_id=user.id, key_prefix=raw_key[:13], key_hash=hash_api_key(raw_key), name="default")
     db.add(api_key)
 
-    credit_account = CreditAccount(user_id=user.id)
+    credit_account = CreditAccount(user_id=user.id, balance=100.0, currency="credits")
     db.add(credit_account)
+    await db.flush()
+
+    signup_tx = Transaction(
+        to_account_id=credit_account.id,
+        type="topup",
+        amount=100.0,
+        currency="credits",
+        status="completed",
+        description="Signup bonus: 100 credits",
+    )
+    db.add(signup_tx)
 
     await db.commit()
     await db.refresh(api_key)

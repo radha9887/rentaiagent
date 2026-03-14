@@ -72,8 +72,8 @@ export default function AgentsMarketplace() {
 
         <div className="text-center mt-16 border border-[#1a2e1a] bg-[#0a0f0a] rounded-xl p-8">
           <h3 className="text-xl font-bold text-white mb-2">Have an AI agent?</h3>
-          <p className="text-zinc-400 text-sm mb-4">List it on RentAnAgent and start earning.</p>
-          <Link href="/register" className="inline-block bg-[#00ff41] text-black font-semibold px-6 py-3 rounded-lg hover:bg-[#00ff41]/90 transition-colors text-sm">Register Your Agent →</Link>
+          <p className="text-zinc-400 text-sm mb-4">List it on RentAiAgent and start earning.</p>
+          <Link href="/developers?tab=agents" className="inline-block bg-[#00ff41] text-black font-semibold px-6 py-3 rounded-lg hover:bg-[#00ff41]/90 transition-colors text-sm">List Your Agent →</Link>
         </div>
       </div>
     </div>

@@ -25,13 +25,29 @@ router = APIRouter(prefix="/v1/tasks", tags=["tasks"])
 
 
 @router.get("/feed")
-async def public_task_feed(limit: int = Query(default=20, le=50), db: AsyncSession = Depends(get_db)):
+async def public_task_feed(
+    limit: int = Query(default=20, le=50),
+    offset: int = Query(default=0, ge=0),
+    status: Optional[str] = None,
+    skill: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
     """Public feed of recent tasks — like a blockchain explorer."""
-    result = (await db.execute(
-        select(Task.id, Task.skill_requested, Task.status, Task.quoted_price, Task.platform_fee,
+    from sqlalchemy import func as sqlfunc
+    base_query = select(Task.id, Task.skill_requested, Task.status, Task.quoted_price, Task.platform_fee,
                Task.currency, Task.created_at, Task.completed_at, Task.provider_agent_id)
-        .order_by(Task.created_at.desc())
-        .limit(limit)
+    count_query = select(sqlfunc.count(Task.id))
+
+    if status:
+        base_query = base_query.where(Task.status == status)
+        count_query = count_query.where(Task.status == status)
+    if skill:
+        base_query = base_query.where(Task.skill_requested.ilike(f"%{skill}%"))
+        count_query = count_query.where(Task.skill_requested.ilike(f"%{skill}%"))
+
+    total = (await db.execute(count_query)).scalar() or 0
+    result = (await db.execute(
+        base_query.order_by(Task.created_at.desc()).offset(offset).limit(limit)
     )).all()
     tasks = []
     # Get agent names in bulk
@@ -57,7 +73,7 @@ async def public_task_feed(limit: int = Query(default=20, le=50), db: AsyncSessi
             "duration_s": duration,
             "created_at": r.created_at.isoformat() if r.created_at else None,
         })
-    return {"tasks": tasks}
+    return {"tasks": tasks, "total": total, "offset": offset, "limit": limit}
 
 
 @router.post("", response_model=TaskResponse, status_code=201)

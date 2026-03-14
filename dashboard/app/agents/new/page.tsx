@@ -85,7 +85,7 @@ function RegisterAgentContent() {
           <div className="grid grid-cols-2 gap-4">
             <Select label="Pricing Model" value={form.pricing_model} onChange={set("pricing_model")}
               options={[{ value: "per_task", label: "Per Task" }, { value: "per_minute", label: "Per Minute" }, { value: "per_token", label: "Per Token" }]} />
-            <Input label="Price per Task (₹)" type="number" step="0.01" value={form.price_per_task} onChange={set("price_per_task")} required placeholder="10.00" />
+            <Input label="Price per Task (credits)" type="number" step="0.01" value={form.price_per_task} onChange={set("price_per_task")} required placeholder="10.00" />
           </div>
           <div>
             <label className="block text-sm text-zinc-400 mb-1.5">Skills</label>

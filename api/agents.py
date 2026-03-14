@@ -10,19 +10,29 @@ from models.rating import AgentStats
 from models.user import User
 from schemas.agent import AgentCreate, AgentUpdate, AgentResponse, AgentListResponse
 from schemas.common import CursorPage, MessageResponse
-from utils.errors import NotFoundError, ForbiddenError, ConflictError
+from utils.errors import NotFoundError, ForbiddenError, ConflictError, ValidationError as AppValidationError
 from utils.pagination import encode_cursor, decode_cursor
 from core.matching import build_agent_search_query
 from api.deps import get_current_user
+import httpx
 
 router = APIRouter(prefix="/v1/agents", tags=["agents"])
 
 
 @router.post("", response_model=AgentResponse, status_code=201)
 async def register_agent(data: AgentCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    agent_count = (await db.execute(
+        select(func.count(Agent.id)).where(Agent.owner_id == user.id)
+    )).scalar() or 0
+    if agent_count >= 20:
+        raise AppValidationError("Maximum 20 agents per account. Contact support for higher limits.")
+
     existing = (await db.execute(select(Agent).where(Agent.slug == data.slug))).scalar_one_or_none()
     if existing:
         raise ConflictError("Slug already taken")
+
+    if not data.health_check_url or not data.health_check_url.startswith(("http://", "https://")):
+        raise AppValidationError("Health check URL is required and must be a valid HTTP/HTTPS URL")
 
     agent = Agent(
         owner_id=user.id, name=data.name, slug=data.slug, description=data.description,
@@ -42,10 +52,126 @@ async def register_agent(data: AgentCreate, user: User = Depends(get_current_use
     stats = AgentStats(agent_id=agent.id)
     db.add(stats)
 
+    # Auto-verify: hit health endpoint
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(data.health_check_url)
+            if resp.status_code < 300:
+                agent.status = "online"
+                agent.health_status = "healthy"
+            else:
+                agent.status = "pending_verification"
+                agent.health_status = "unknown"
+    except Exception:
+        agent.status = "pending_verification"
+        agent.health_status = "unknown"
+
     await db.commit()
     await db.refresh(agent)
     return agent
 
+
+
+from pydantic import BaseModel as _ImportBase
+from decimal import Decimal
+import re
+import secrets
+
+class AgentImport(_ImportBase):
+    url: str
+    price_per_task: Optional[Decimal] = None
+
+@router.post("/import", response_model=AgentResponse, status_code=201)
+async def import_agent(data: AgentImport, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Import an agent from its A2A agent card URL."""
+    # Check agent limit
+    agent_count = (await db.execute(
+        select(func.count(Agent.id)).where(Agent.owner_id == user.id)
+    )).scalar() or 0
+    if agent_count >= 20:
+        raise AppValidationError("Maximum 20 agents per account. Contact support for higher limits.")
+
+    # Fetch agent card
+    card_url = data.url.rstrip("/") + "/.well-known/agent.json"
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(card_url)
+            if resp.status_code != 200:
+                raise AppValidationError(f"Could not fetch agent card from {card_url} (HTTP {resp.status_code})")
+            card = resp.json()
+    except httpx.RequestError as e:
+        raise AppValidationError(f"Could not reach {card_url}: {str(e)}")
+    except AppValidationError:
+        raise
+    except Exception:
+        raise AppValidationError(f"Invalid agent card JSON at {card_url}")
+
+    # Extract info from card
+    name = card.get("name", "Imported Agent")
+    description = card.get("description", "")
+    endpoint_url = card.get("url", data.url)
+
+    # Generate slug from name
+    slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+
+    # Check slug uniqueness
+    existing = (await db.execute(select(Agent).where(Agent.slug == slug))).scalar_one_or_none()
+    if existing:
+        slug = f"{slug}-{secrets.token_hex(3)}"
+
+    # Extract pricing
+    price = data.price_per_task
+    if price is None:
+        ext = card.get("x-rentaiagent", {}).get("pricing", {})
+        price = Decimal(str(ext.get("price_per_task", 0)))
+
+    # Extract protocols
+    protocols = []
+    if card.get("capabilities", {}).get("streaming"):
+        protocols.append("streaming")
+    protocols.append("a2a")
+
+    # Create agent
+    agent = Agent(
+        owner_id=user.id, name=name, slug=slug, description=description,
+        endpoint_url=endpoint_url, endpoint_type="a2a",
+        pricing_model="per_task", price_per_task=price,
+        currency="credits",
+        health_check_url=endpoint_url,
+        protocols=protocols,
+        metadata_={"imported_from": data.url, "agent_card": card},
+    )
+    db.add(agent)
+    await db.flush()
+
+    # Add skills from card
+    card_skills = card.get("skills", [])
+    for s in card_skills:
+        skill_tag = s.get("id") or s.get("name", "general")
+        category = s.get("category", "general")
+        db.add(AgentSkill(agent_id=agent.id, skill_tag=skill_tag, category=category, proficiency=0.5))
+
+    # Create stats record
+    stats = AgentStats(agent_id=agent.id)
+    db.add(stats)
+
+    # Auto-verify
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(endpoint_url)
+            if resp.status_code < 400:
+                agent.status = "online"
+                agent.health_status = "healthy"
+            else:
+                agent.status = "pending_verification"
+                agent.health_status = "unknown"
+    except Exception:
+        agent.status = "pending_verification"
+        agent.health_status = "unknown"
+
+    await db.commit()
+    await db.refresh(agent)
+    return agent
 
 @router.get("/me")
 async def my_agents(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -67,6 +193,46 @@ async def featured_agents(limit: int = Query(default=6, le=20), db: AsyncSession
     )
     result = (await db.execute(query)).scalars().all()
     return {"agents": result}
+
+
+@router.get("/import/preview")
+async def preview_agent_import(url: str = Query(...)):
+    """Preview an agent card without creating anything."""
+    card_url = url.rstrip("/") + "/.well-known/agent.json"
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(card_url)
+            if resp.status_code != 200:
+                raise AppValidationError(f"Could not fetch agent card (HTTP {resp.status_code})")
+            card = resp.json()
+    except httpx.RequestError as e:
+        raise AppValidationError(f"Could not reach {card_url}: {str(e)}")
+    except AppValidationError:
+        raise
+    except Exception:
+        raise AppValidationError(f"Invalid JSON at {card_url}")
+
+    name = card.get("name", "")
+    description = card.get("description", "")
+    endpoint_url = card.get("url", url)
+    skills = []
+    for s in card.get("skills", []):
+        skills.append({
+            "skill_tag": s.get("id") or s.get("name", ""),
+            "category": s.get("category", "general"),
+        })
+    ext = card.get("x-rentaiagent", {}).get("pricing", {})
+    price = ext.get("price_per_task", 0)
+
+    return {
+        "name": name,
+        "description": description,
+        "endpoint_url": endpoint_url,
+        "health_check_url": endpoint_url,
+        "skills": skills,
+        "price_per_task": price,
+        "card": card,
+    }
 
 
 @router.get("", response_model=CursorPage[AgentListResponse])

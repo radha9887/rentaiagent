@@ -14,7 +14,7 @@ class CreditAccount(Base):
     total_earned = Column(Numeric(14, 4), default=0, nullable=False)
     total_spent = Column(Numeric(14, 4), default=0, nullable=False)
     total_fees_paid = Column(Numeric(14, 4), default=0, nullable=False)
-    currency = Column(String(3), default="INR")
+    currency = Column(String(10), default="credits")
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     __table_args__ = (CheckConstraint("balance >= 0", name="ck_balance_non_negative"),)
@@ -30,7 +30,7 @@ class Transaction(Base):
     to_account_id = Column(UUID(as_uuid=True), ForeignKey("credit_accounts.id"), nullable=True)
     type = Column(String(30), nullable=False)  # topup | escrow_hold | escrow_release | escrow_refund | fee
     amount = Column(Numeric(14, 4), nullable=False)
-    currency = Column(String(3), default="INR")
+    currency = Column(String(10), default="credits")
     task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=True)
     escrow_id = Column(UUID(as_uuid=True), ForeignKey("escrows.id"), nullable=True)
     razorpay_payment_id = Column(String(100), nullable=True)

@@ -8,7 +8,6 @@ import { AuthProvider, useAuth } from "./lib/auth-context";
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: "◻" },
   { href: "/dashboard/agents", label: "My Agents", icon: "⬡" },
-  { href: "/dashboard/external-agents", label: "External Agents", icon: "🌐", indent: true },
   { href: "/dashboard/tasks", label: "My Tasks", icon: "↗" },
   { href: "/credits", label: "Credits", icon: "◈" },
   { href: "/dashboard/webhooks", label: "Webhooks", icon: "⚡" },
@@ -24,7 +23,7 @@ function Sidebar() {
         <Link href="/" className="flex items-center gap-2">
           <span className="text-[#00ff41] text-xl">⬡</span>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-white">RentAnAgent</h1>
+            <h1 className="text-lg font-bold tracking-tight text-white">RentAiAgent</h1>
             <p className="text-xs text-zinc-500 font-mono mt-0.5">Agent Marketplace</p>
           </div>
         </Link>
@@ -34,9 +33,9 @@ function Sidebar() {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href) && !NAV.some(n => n.href !== item.href && n.href.startsWith(item.href) && pathname.startsWith(n.href)));
           return (
             <Link key={item.href} href={item.href}
-              className={`flex items-center gap-2.5 ${item.indent ? "pl-8" : "px-3"} py-2 rounded-lg text-sm transition-colors ${active ? "bg-[#0a1f0a] text-[#00ff41] border-l-2 border-[#00ff41]" : "text-zinc-400 hover:text-[#00ff41] hover:bg-[#0a1f0a]/50"}`}>
+              className={`flex items-center gap-2.5 ${"px-3"} py-2 rounded-lg text-sm transition-colors ${active ? "bg-[#0a1f0a] text-[#00ff41] border-l-2 border-[#00ff41]" : "text-zinc-400 hover:text-[#00ff41] hover:bg-[#0a1f0a]/50"}`}>
               <span className="text-xs">{item.icon}</span>
-              <span className={item.indent ? "text-xs" : ""}>{item.label}</span>
+              <span className={""}>{item.label}</span>
             </Link>
           );
         })}
@@ -65,9 +64,9 @@ function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isAuth = pathname === "/login" || pathname === "/register";
   const isPublic = pathname === "/" || pathname === "/agents" || pathname.startsWith("/agents/") && !pathname.startsWith("/agents/new")
-    || pathname === "/tasks" || pathname === "/docs" || pathname === "/developers" || pathname === "/publish";
+    || pathname === "/tasks" || pathname.startsWith("/tasks/") || pathname === "/docs" || pathname === "/developers" || pathname === "/publish";
   const isDashboard = pathname.startsWith("/dashboard") || pathname === "/credits"
-    || pathname === "/agents/new" || pathname === "/tasks/new" || pathname.startsWith("/tasks/");
+    || pathname === "/agents/new" || pathname === "/tasks/new";
 
   if (loading) return <div className="flex items-center justify-center h-screen bg-[#09090b] text-zinc-500">Loading...</div>;
 
