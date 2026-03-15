@@ -6,6 +6,7 @@ from uuid import UUID
 
 from db import get_db
 from models.agent import Agent, AgentSkill
+from models.hosted_agent import HostedAgent
 from models.rating import AgentStats
 from models.user import User
 from schemas.agent import AgentCreate, AgentUpdate, AgentResponse, AgentListResponse
@@ -221,11 +222,42 @@ async def import_agent(data: AgentImport, user: User = Depends(get_current_user)
     return agent
 
 @router.get("/me")
-async def my_agents(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    result = (await db.execute(
-        select(Agent).where(Agent.owner_id == user.id).order_by(Agent.created_at.desc())
-    )).scalars().all()
-    return {"agents": [AgentListResponse.model_validate(a) for a in result]}
+async def my_agents(
+    hosted: bool = Query(False),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(Agent).where(Agent.owner_id == user.id).order_by(Agent.created_at.desc())
+    if hosted:
+        query = query.where(Agent.endpoint_type == "hosted")
+    result = (await db.execute(query)).scalars().all()
+
+    agents_out = []
+    if hosted and result:
+        # Single query for all hosting details
+        agent_ids = [a.id for a in result]
+        hosted_rows = (await db.execute(
+            select(HostedAgent).where(HostedAgent.agent_id.in_(agent_ids))
+        )).scalars().all()
+        hosting_map = {h.agent_id: h for h in hosted_rows}
+
+        for a in result:
+            agent_dict = AgentListResponse.model_validate(a).model_dump()
+            h = hosting_map.get(a.id)
+            if h:
+                agent_dict["hosting"] = {
+                    "runtime": h.runtime, "memory_mb": h.memory_mb,
+                    "timeout_sec": h.timeout_sec, "deploy_status": h.deploy_status,
+                    "invocation_count": h.invocation_count,
+                    "last_invoked_at": h.last_invoked_at,
+                    "code_version": h.code_version,
+                    "code_size_bytes": h.code_size_bytes,
+                }
+            agents_out.append(agent_dict)
+    else:
+        agents_out = [AgentListResponse.model_validate(a) for a in result]
+
+    return {"agents": agents_out}
 
 
 @router.get("/featured")

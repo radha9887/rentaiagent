@@ -1,0 +1,15 @@
+[Unit]
+Description=RentAiAgent Backend (FastAPI)
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=simple
+User=openclaw
+WorkingDirectory=/home/openclaw/workspace/rentanagent
+ExecStart=/home/openclaw/.local/bin/uvicorn main:app --host 0.0.0.0 --port 8100
+Restart=always
+RestartSec=3
+EnvironmentFile=/home/openclaw/workspace/rentanagent/.env
+
+[Install]
+WantedBy=multi-user.target

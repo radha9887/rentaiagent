@@ -1,0 +1,15 @@
+[Unit]
+Description=RentAiAgent Frontend (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+User=openclaw
+WorkingDirectory=/home/openclaw/workspace/rentanagent/dashboard
+ExecStart=/usr/bin/npx next start -p 3100
+Restart=always
+RestartSec=3
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

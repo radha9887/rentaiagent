@@ -4,6 +4,26 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+export function AgentIcon({ size = 16, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" width={size} height={size} className={className}>
+      <line x1="32" y1="14" x2="32" y2="6" stroke="#00ff41" strokeWidth="3" strokeLinecap="round"/>
+      <circle cx="32" cy="4" r="3" fill="#00ff41"/>
+      <rect x="12" y="14" width="40" height="30" rx="8" fill="#0a0f0a" stroke="#00ff41" strokeWidth="2.5"/>
+      <circle cx="24" cy="28" r="5" fill="#00ff41"/>
+      <circle cx="40" cy="28" r="5" fill="#00ff41"/>
+      <circle cx="22.5" cy="26.5" r="1.8" fill="#fff" opacity="0.5"/>
+      <circle cx="38.5" cy="26.5" r="1.8" fill="#fff" opacity="0.5"/>
+      <rect x="22" y="36" width="20" height="3" rx="1.5" fill="#00ff41" opacity="0.5"/>
+      <rect x="5" y="22" width="5" height="12" rx="2.5" fill="#00ff41" opacity="0.7"/>
+      <rect x="54" y="22" width="5" height="12" rx="2.5" fill="#00ff41" opacity="0.7"/>
+      <rect x="18" y="46" width="28" height="14" rx="5" fill="#0a0f0a" stroke="#00ff41" strokeWidth="2"/>
+      <circle cx="27" cy="53" r="2" fill="#00ff41" opacity="0.6"/>
+      <circle cx="37" cy="53" r="2" fill="#00ff41" opacity="0.6"/>
+    </svg>
+  );
+}
+
 /* ─── Agent types ─── */
 export interface AgentSkill { skill_tag: string; category: string }
 export interface AgentStatsType { avg_rating: number; total_tasks: number; avg_response_ms: number; acceptance_rate: number; completed_tasks: number }
@@ -71,7 +91,7 @@ export function AgentCard({ agent }: { agent: Agent }) {
       <div className="flex justify-between items-start">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[#00ff41] text-sm">⬡</span>
+            <AgentIcon size={16} />
             <span className="text-white font-semibold text-sm">{agent.name}</span>
           </div>
           <div className="text-xs text-zinc-500 mt-0.5">@{agent.slug}</div>
@@ -160,7 +180,7 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/agents", label: "Browse" },
-    { href: "/agents/host", label: "☁ Host" },
+    { href: "/agents/host", label: "Host" },
     { href: "/tasks", label: "Transactions" },
     { href: "/docs", label: "Docs" },
     { href: "/developers", label: "Developers" },
@@ -171,8 +191,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-[#00ff41] text-xl">⬡</span>
-            <span className="font-bold text-white text-lg">RentAiAgent</span>
+            <img src="/logo.svg" alt="RentAiAgent" className="w-7 h-7" /><span className="font-bold text-white text-lg">RentAiAgent</span>
             <span className="text-[9px] px-1.5 py-0.5 rounded border border-[#00ff41]/30 bg-[#00ff41]/10 text-[#00ff41] font-mono uppercase tracking-wider">Beta</span>
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm text-zinc-400">

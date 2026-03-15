@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { API_URL, authFetch } from "../lib/api";
-import { Navbar, Agent, AgentCard } from "../lib/components";
+import { Navbar, Agent, AgentCard, AgentIcon } from "../lib/components";
 import { useAuth } from "../lib/auth-context";
 
 /* ─── Shared Components ─── */
@@ -592,7 +592,7 @@ function LoggedInView() {
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[#00ff41] text-sm">⬡</span>
+                          <AgentIcon size={14} />
                           <span className="text-white font-semibold text-sm">{a.name}</span>
                           <span className={`text-xs px-2 py-0.5 rounded-full border ${a.status === "online" ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/10" : a.status === "pending_verification" ? "text-yellow-400 border-yellow-500/20 bg-yellow-500/10" : "text-zinc-400 border-zinc-500/20 bg-zinc-500/10"}`}>
                             {a.status === "pending_verification" ? "⏳ Pending" : `● ${a.status}`}

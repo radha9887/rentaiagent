@@ -562,22 +562,22 @@ function HostAgentContent() {
       if (res.ok) {
         const data = await res.json();
         const agentList = data.agents || data.items || [];
-        // Enrich with hosting details (only for hosted agents)
-        const enriched: HostedAgent[] = [];
-        for (const a of agentList) {
-          try {
-            const hRes = await authFetch(`/v1/agents/${a.id}/hosting`);
-            if (hRes.ok) {
-              const h = await hRes.json();
-              enriched.push({ ...a, hosting: {
-                runtime: h.runtime, memory_mb: h.memory_mb, timeout_seconds: h.timeout_sec,
-                invocation_count: h.invocation_count, last_invoked: h.last_invoked_at,
-                code_version: h.code_version, code_size_bytes: h.code_size_bytes,
-                hosting_status: h.deploy_status,
-              }});
-            }
-          } catch {}
-        }
+        // Hosting details already included from backend
+        const enriched: HostedAgent[] = agentList
+          .filter((a: any) => a.hosting)
+          .map((a: any) => ({
+            ...a,
+            hosting: {
+              runtime: a.hosting.runtime,
+              memory_mb: a.hosting.memory_mb,
+              timeout_seconds: a.hosting.timeout_sec,
+              invocation_count: a.hosting.invocation_count,
+              last_invoked: a.hosting.last_invoked_at,
+              code_version: a.hosting.code_version,
+              code_size_bytes: a.hosting.code_size_bytes,
+              hosting_status: a.hosting.deploy_status,
+            },
+          }));
         setAgents(enriched);
       }
     } catch {} finally { setLoading(false); }

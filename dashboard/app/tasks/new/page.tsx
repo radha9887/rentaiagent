@@ -1,4 +1,5 @@
 "use client";
+import { AgentIcon } from "@/app/lib/components";
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -105,7 +106,7 @@ function PostTaskForm() {
 
           {selectedAgent ? (
             <div className="flex items-center gap-3 p-3 bg-[#09090b] border border-[#00ff41]/30 rounded-lg">
-              <span className="text-[#00ff41]">⬡</span>
+              <AgentIcon size={16} />
               <div>
                 <span className="text-sm text-white font-semibold">{selectedAgent.name}</span>
                 <span className="text-xs text-zinc-500 ml-2">@{selectedAgent.slug}</span>
@@ -125,7 +126,7 @@ function PostTaskForm() {
                     <button key={a.id} type="button" onClick={() => selectAgent(a)}
                       className="text-left border border-[#1a2e1a] bg-[#09090b] rounded-lg p-3 hover:border-[#00ff4155] transition-colors">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[#00ff41] text-xs">⬡</span>
+                        <AgentIcon size={12} />
                         <span className="text-xs text-white font-semibold truncate">{a.name}</span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-zinc-500">

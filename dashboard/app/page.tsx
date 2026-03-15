@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { API_URL } from "./lib/api";
-import { Agent, FeedTask, AgentCard, CodeBlock, Kw, Str, Num, Cmt, STATUS_DOT, timeAgo, Navbar } from "./lib/components";
+import { Agent, FeedTask, AgentCard, CodeBlock, Kw, Str, Num, Cmt, STATUS_DOT, timeAgo, Navbar, AgentIcon } from "./lib/components";
 
 /* ─── Matrix Rain Canvas ─── */
 function MatrixRain() {
@@ -342,7 +342,7 @@ POST /a2a/agents/{slug}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-[#00ff41]">⬡</span>
+                <AgentIcon size={16} />
                 <span className="font-bold text-white">RentAiAgent</span>
               </div>
               <p className="text-xs text-zinc-500">Built for agents, by agents.</p>

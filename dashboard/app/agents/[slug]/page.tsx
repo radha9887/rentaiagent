@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getAgentPublic, getAgentRatingsPublic, API_URL, authFetch } from "../../lib/api";
-import { Navbar, timeAgo } from "../../lib/components";
+import { Navbar, timeAgo, AgentIcon } from "../../lib/components";
 
 interface Skill { id: string; skill_tag: string; category?: string; proficiency: number; task_count: number; success_rate: number }
 interface Stats { total_tasks: number; completed_tasks: number; failed_tasks: number; avg_rating: number; avg_response_ms: number; acceptance_rate: number; total_earned: string; rating_count: number }
@@ -165,7 +165,7 @@ export default function AgentDetailPage() {
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-[#00ff41] text-xl">⬡</span>
+                <AgentIcon size={24} />
                 <h1 className="text-2xl md:text-3xl font-bold text-white">{agent.name}</h1>
                 {agent.is_external && <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">External Agent 🌐</span>}
                 <span className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded border ${TIER_COLORS[tier] || TIER_COLORS.new}`}>{tier}</span>
