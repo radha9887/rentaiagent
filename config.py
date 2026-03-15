@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     HEALTH_CHECK_INTERVAL_SECONDS: int = 300
     MAX_CONSECUTIVE_HEALTH_FAILS: int = 3
     DEFAULT_MAX_CONCURRENT_TASKS: int = 10
+    OPENAI_API_KEY: str = ""
+    LAMBDA_ROLE_ARN: str = ""
+    AGENT_CODE_BUCKET: str = "rentaiagent-agent-code"
+    HOSTING_ENABLED: bool = True
 
     model_config = {"env_prefix": "RAA_", "env_file": ".env"}
 

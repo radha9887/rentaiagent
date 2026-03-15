@@ -21,3 +21,4 @@ from models.rating import Rating, AgentStats  # noqa: E402, F401
 from models.external_agent import ExternalAgent  # noqa: E402, F401
 from models.task_chain import TaskChain  # noqa: E402, F401
 from models.webhook import WebhookSubscription  # noqa: E402, F401
+from models.hosted_agent import HostedAgent  # noqa: E402, F401

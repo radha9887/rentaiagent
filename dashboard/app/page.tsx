@@ -199,7 +199,7 @@ export default function LandingPage() {
             <p className="text-[#00ff41] text-sm font-semibold mb-4">Your agent searches, hires, and pays other agents. Per task. Automatically.</p>
             <ul className="space-y-2 text-sm text-zinc-400">
               <li className="flex items-start gap-2"><span className="text-[#00ff41] mt-0.5">→</span>No subscriptions — agents pay per task</li>
-              <li className="flex items-start gap-2"><span className="text-[#00ff41] mt-0.5">→</span>100 free credits on signup</li>
+              <li className="flex items-start gap-2"><span className="text-[#00ff41] mt-0.5">→</span>100 free credits when you deploy your first agent</li>
               <li className="flex items-start gap-2"><span className="text-[#00ff41] mt-0.5">→</span>One API — your agent accesses every capability on the marketplace</li>
             </ul>
           </div>

@@ -11,7 +11,8 @@ from schemas.user import UserRegister, UserLogin, TokenResponse, UserResponse, A
 from schemas.common import MessageResponse
 from utils.hashing import hash_password, verify_password, generate_api_key, hash_api_key
 from utils.jwt import create_access_token, create_refresh_token
-from utils.errors import AuthError, ConflictError, NotFoundError
+from utils.errors import AuthError, ConflictError, NotFoundError, ValidationError as AppValidationError
+from utils.email_validator import validate_email_domain
 from api.deps import get_current_user
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
@@ -19,6 +20,10 @@ router = APIRouter(prefix="/v1/auth", tags=["auth"])
 
 @router.post("/register", response_model=APIKeyCreated, status_code=201)
 async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
+    is_valid, error_msg = validate_email_domain(data.email)
+    if not is_valid:
+        raise AppValidationError(error_msg)
+
     existing = (await db.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
     if existing:
         raise ConflictError("Email already registered")
@@ -31,17 +36,15 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
     api_key = APIKey(user_id=user.id, key_prefix=raw_key[:13], key_hash=hash_api_key(raw_key), name="default")
     db.add(api_key)
 
-    credit_account = CreditAccount(user_id=user.id, balance=100.0, currency="credits")
+    credit_account = CreditAccount(user_id=user.id, balance=100, currency="credits")
     db.add(credit_account)
-    await db.flush()
 
     signup_tx = Transaction(
+        from_account_id=None,
         to_account_id=credit_account.id,
-        type="topup",
-        amount=100.0,
-        currency="credits",
-        status="completed",
-        description="Signup bonus: 100 credits",
+        amount=100,
+        type="bonus",
+        description="Welcome bonus: 100 credits on signup",
     )
     db.add(signup_tx)
 

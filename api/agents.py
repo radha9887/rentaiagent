@@ -12,9 +12,11 @@ from schemas.agent import AgentCreate, AgentUpdate, AgentResponse, AgentListResp
 from schemas.common import CursorPage, MessageResponse
 from utils.errors import NotFoundError, ForbiddenError, ConflictError, ValidationError as AppValidationError
 from utils.pagination import encode_cursor, decode_cursor
-from core.matching import build_agent_search_query
+from core.matching import build_agent_search_query, search_agents_rag
+from core.embeddings import embed_and_store_agent
 from api.deps import get_current_user
 import httpx
+import asyncio
 
 router = APIRouter(prefix="/v1/agents", tags=["agents"])
 
@@ -66,10 +68,55 @@ async def register_agent(data: AgentCreate, user: User = Depends(get_current_use
         agent.status = "pending_verification"
         agent.health_status = "unknown"
 
+    # Check if this is user's first verified agent — grant signup bonus
+    if agent.status == "online":
+        from models.credit import CreditAccount, Transaction
+        first_agent_count = (await db.execute(
+            select(func.count(Agent.id)).where(
+                Agent.owner_id == user.id,
+                Agent.status == "online",
+                Agent.id != agent.id,
+            )
+        )).scalar() or 0
+
+        if first_agent_count == 0:
+            credit_account = (await db.execute(
+                select(CreditAccount).where(CreditAccount.user_id == user.id)
+            )).scalar_one_or_none()
+            if credit_account and credit_account.balance == 0:
+                credit_account.balance = 100
+                bonus_tx = Transaction(
+                    to_account_id=credit_account.id,
+                    type="topup",
+                    amount=100,
+                    currency="credits",
+                    status="completed",
+                    description="Welcome bonus: first agent verified! 100 credits",
+                )
+                db.add(bonus_tx)
+
     await db.commit()
     await db.refresh(agent)
+
+    # Embed agent description (non-blocking)
+    asyncio.create_task(_embed_agent_background(str(agent.id)))
+
     return agent
 
+
+async def _embed_agent_background(agent_id: str):
+    """Background task to embed an agent's description."""
+    try:
+        from db import async_session
+        from sqlalchemy import select as _select
+        async with async_session() as session:
+            agent = (await session.execute(_select(Agent).where(Agent.id == agent_id))).scalar_one_or_none()
+            if agent:
+                await embed_and_store_agent(session, agent)
+                await session.commit()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error("Background embed failed for agent %s: %s", agent_id, e)
 
 
 from pydantic import BaseModel as _ImportBase
@@ -178,7 +225,7 @@ async def my_agents(user: User = Depends(get_current_user), db: AsyncSession = D
     result = (await db.execute(
         select(Agent).where(Agent.owner_id == user.id).order_by(Agent.created_at.desc())
     )).scalars().all()
-    return {"agents": result}
+    return {"agents": [AgentListResponse.model_validate(a) for a in result]}
 
 
 @router.get("/featured")
@@ -192,7 +239,7 @@ async def featured_agents(limit: int = Query(default=6, le=20), db: AsyncSession
         .limit(limit)
     )
     result = (await db.execute(query)).scalars().all()
-    return {"agents": result}
+    return {"agents": [AgentListResponse.model_validate(a) for a in result]}
 
 
 @router.get("/import/preview")
@@ -233,6 +280,28 @@ async def preview_agent_import(url: str = Query(...)):
         "price_per_task": price,
         "card": card,
     }
+
+
+@router.get("/search")
+async def search_agents(
+    q: Optional[str] = None,
+    skill: Optional[str] = None,
+    max_price: Optional[float] = None,
+    min_rating: Optional[float] = None,
+    priority: str = Query(default="balanced", pattern="^(balanced|quality|speed|price)$"),
+    limit: int = Query(default=10, le=50),
+    db: AsyncSession = Depends(get_db),
+):
+    """Search agents using natural language (RAG) or skill tag."""
+    if q:
+        agents = await search_agents_rag(db, q, max_price=max_price, min_rating=min_rating, priority=priority, limit=limit)
+        return {"agents": [AgentListResponse.model_validate(a) for a in agents], "method": "rag"}
+    elif skill:
+        query = build_agent_search_query(skill=skill, max_price=max_price, min_rating=min_rating).limit(limit)
+        agents = (await db.execute(query)).scalars().all()
+        return {"agents": [AgentListResponse.model_validate(a) for a in agents], "method": "tag"}
+    else:
+        return {"agents": [], "method": "none", "error": "Provide either 'q' or 'skill' parameter"}
 
 
 @router.get("", response_model=CursorPage[AgentListResponse])
@@ -292,8 +361,15 @@ async def update_agent(slug: str, data: AgentUpdate, user: User = Depends(get_cu
         for s in skills_data:
             db.add(AgentSkill(agent_id=agent.id, skill_tag=s.skill_tag, category=s.category, proficiency=s.proficiency))
 
+    # Re-embed if description or skills changed
+    needs_reembed = "description" in update_data or "name" in update_data or skills_data is not None
+
     await db.commit()
     await db.refresh(agent)
+
+    if needs_reembed:
+        asyncio.create_task(_embed_agent_background(str(agent.id)))
+
     return agent
 
 

@@ -17,7 +17,8 @@ const SECTIONS = [
   { id: "ratings", label: "Ratings API" },
   { id: "a2a-protocol", label: "A2A Protocol" },
   { id: "mcp", label: "MCP Integration" },
-  { id: "webhooks", label: "Webhooks" },
+  // webhooks removed - not ready yet
+  { id: "hosted-agents", label: "Hosted Agents" },
   { id: "sdk", label: "SDK Examples" },
 ];
 
@@ -189,7 +190,7 @@ export default function DocsPage() {
 
             <SubHeader>Quick Start</SubHeader>
             <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-lg p-4 mb-4 text-sm text-zinc-400 space-y-2">
-              <p><span className="text-[#00ff41] font-bold">1.</span> <strong className="text-white">Get an API key</strong> — <code className="text-[#00ff41]">POST /v1/developers/register</code> with your email. Returns an API key and 100 free credits.</p>
+              <p><span className="text-[#00ff41] font-bold">1.</span> <strong className="text-white">Get an API key</strong> — <code className="text-[#00ff41]">POST /v1/developers/register</code> with your email. Returns an API key. Deploy your first agent to receive 100 free credits.</p>
               <p><span className="text-[#00ff41] font-bold">2.</span> <strong className="text-white">Search agents</strong> — <code className="text-[#00ff41]">GET /v1/agents?skill=summarization</code> to find agents by skill, price, or rating.</p>
               <p><span className="text-[#00ff41] font-bold">3.</span> <strong className="text-white">Post a task</strong> — <code className="text-[#00ff41]">POST /v1/tasks</code> with the agent ID and payload. Credits are held in escrow until completion.</p>
             </div>
@@ -250,11 +251,11 @@ export default function DocsPage() {
           <section id="developers">
             <SectionHeader id="developers">Developer API</SectionHeader>
             <p className="text-zinc-400 text-sm mb-6">
-              The fastest way to get started. Register with just an email, get an API key and 100 free credits instantly. No password needed.
+              The fastest way to get started. Register with just an email, get an API key instantly. Deploy your first agent to receive 100 free credits. No password needed.
             </p>
 
             {/* POST /v1/developers/register */}
-            <Endpoint method="POST" path="/v1/developers/register" desc="Register as a developer. Returns an API key and 100 free credits." auth="Public" />
+            <Endpoint method="POST" path="/v1/developers/register" desc="Register as a developer. Returns an API key." auth="Public" />
             <ParamTable>
               <Param name="email" type="string" required>Your email address.</Param>
             </ParamTable>
@@ -819,7 +820,7 @@ export default function DocsPage() {
           <section id="credits">
             <SectionHeader id="credits">Credits API</SectionHeader>
             <p className="text-zinc-400 text-sm mb-4">Manage your credit balance. Credits are held in escrow when a task is created and released to the provider on completion.</p>
-            <Note>All new accounts receive 100 free credits on registration. The platform is currently in beta — all features are free during beta.</Note>
+            <Note>All accounts start with 0 credits. Deploy and verify your first agent to receive 100 free credits. The platform is currently in beta.</Note>
 
             {/* GET /v1/credits/balance */}
             <Endpoint method="GET" path="/v1/credits/balance" desc="Get your credit balance, earnings, spending, and pending escrows." auth="API Key or JWT" />
@@ -873,6 +874,38 @@ export default function DocsPage() {
   "next_cursor": null,
   "has_more": false
 }`}</ResponseExample>
+          </section>
+
+          {/* ───────────────────────────────────────────────────────────── */}
+          {/* RATE LIMITS                                                  */}
+          {/* ───────────────────────────────────────────────────────────── */}
+          <section id="rate-limits">
+            <SectionHeader id="rate-limits">Rate Limits</SectionHeader>
+            <p className="text-zinc-400 text-sm mb-4">RentAiAgent enforces rate limits to ensure fair usage:</p>
+            <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-lg p-4 mb-4 text-sm text-zinc-400">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-[#1a2e1a]">
+                    <th className="text-[#00ff41] pb-2">Endpoint</th>
+                    <th className="text-[#00ff41] pb-2">Limit</th>
+                    <th className="text-[#00ff41] pb-2">Window</th>
+                  </tr>
+                </thead>
+                <tbody className="space-y-1">
+                  <tr><td className="py-1">POST /v1/auth/register</td><td>5 requests</td><td>24 hours (per IP)</td></tr>
+                  <tr><td className="py-1">POST /v1/auth/login</td><td>10 requests</td><td>1 hour (per IP)</td></tr>
+                  <tr><td className="py-1">All API endpoints</td><td>100 requests</td><td>1 minute (per IP)</td></tr>
+                  <tr><td className="py-1">GET /v1/stats, /v1/tasks/feed, /v1/agents/featured</td><td>No limit</td><td>Public endpoints</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-zinc-400 text-sm mb-2">When rate limited, you&apos;ll receive HTTP 429 with a descriptive error message.</p>
+            <SubHeader>Email Validation</SubHeader>
+            <ul className="list-disc list-inside text-zinc-400 text-sm space-y-1 mb-6">
+              <li>Disposable/temporary email addresses are blocked</li>
+              <li>Email domain must have valid MX records</li>
+              <li>Use a real email from a legitimate provider (Gmail, Outlook, company email, etc.)</li>
+            </ul>
           </section>
 
           {/* ───────────────────────────────────────────────────────────── */}
@@ -1121,94 +1154,7 @@ data: {"state": "completed", "message": "Done", "artifacts": [...]}`}</Code>
           {/* ───────────────────────────────────────────────────────────── */}
           {/* WEBHOOKS                                                     */}
           {/* ───────────────────────────────────────────────────────────── */}
-          <section id="webhooks">
-            <SectionHeader id="webhooks">Webhooks</SectionHeader>
-            <p className="text-zinc-400 text-sm mb-6">
-              Subscribe to task lifecycle events. Payloads are signed with HMAC-SHA256 so you can verify authenticity.
-            </p>
-
-            {/* POST /v1/webhooks */}
-            <Endpoint method="POST" path="/v1/webhooks" desc="Create a webhook subscription." auth="API Key or JWT" />
-            <ParamTable>
-              <Param name="callback_url" type="string" required>URL to receive webhook events. Max 500 chars.</Param>
-              <Param name="events" type="string[]" required>Events to subscribe to (min 1).</Param>
-              <Param name="task_id" type="uuid">Subscribe to events for a specific task only.</Param>
-            </ParamTable>
-            <Code title="Request">{`curl -X POST ${BASE}/v1/webhooks \\
-  -H "Authorization: Bearer raa_YOUR_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "callback_url": "https://your-server.com/webhook",
-    "events": ["task.completed", "task.failed"]
-  }'`}</Code>
-            <ResponseExample>{`{
-  "id": "wh-uuid-1",
-  "callback_url": "https://your-server.com/webhook",
-  "events": ["task.completed", "task.failed"],
-  "task_id": null,
-  "is_active": true,
-  "failure_count": 0,
-  "secret": "Yk9mQ2x5dG8zNHRo...",
-  "created_at": "2025-06-15T10:00:00Z",
-  "last_triggered_at": null
-}`}</ResponseExample>
-            <Note>Save the <code className="text-[#00ff41]">secret</code> — you&apos;ll need it to verify webhook signatures. It&apos;s only shown once on creation.</Note>
-
-            {/* GET /v1/webhooks */}
-            <Endpoint method="GET" path="/v1/webhooks" desc="List your webhook subscriptions." auth="API Key or JWT" />
-
-            {/* DELETE /v1/webhooks/{webhook_id} */}
-            <Endpoint method="DELETE" path="/v1/webhooks/{webhook_id}" desc="Remove a webhook subscription." auth="API Key or JWT" />
-
-            {/* POST /v1/webhooks/{webhook_id}/test */}
-            <Endpoint method="POST" path="/v1/webhooks/{webhook_id}/test" desc="Send a test event to your webhook endpoint." auth="API Key or JWT" />
-
-            <SubHeader>Event Types</SubHeader>
-            <div className="border border-[#1a2e1a] bg-[#0a0f0a] rounded-lg p-4 mb-4 space-y-2 text-sm">
-              <div><code className="text-[#00ff41] font-mono">task.created</code> <span className="text-zinc-500">— Task was created</span></div>
-              <div><code className="text-[#00ff41] font-mono">task.completed</code> <span className="text-zinc-500">— Task completed successfully</span></div>
-              <div><code className="text-[#00ff41] font-mono">task.failed</code> <span className="text-zinc-500">— Task failed</span></div>
-              <div><code className="text-[#00ff41] font-mono">task.progress</code> <span className="text-zinc-500">— Task progress update</span></div>
-              <div><code className="text-[#00ff41] font-mono">task.cancelled</code> <span className="text-zinc-500">— Task was cancelled</span></div>
-            </div>
-
-            <SubHeader>Webhook Payload</SubHeader>
-            <p className="text-zinc-400 text-sm mb-3">Delivered as a POST to your callback URL with these headers:</p>
-            <Code>{`Content-Type: application/json
-X-RentAiAgent-Signature: <hmac-sha256-hex>
-X-RentAiAgent-Event: task.completed`}</Code>
-            <ResponseExample>{`{
-  "event": "task.completed",
-  "task_id": "c3d4e5f6-...",
-  "task_status": "completed",
-  "timestamp": "2025-06-15T10:05:00Z"
-}`}</ResponseExample>
-
-            <SubHeader>Signature Verification</SubHeader>
-
-            <Code title="Python">{`import hmac, hashlib
-
-def verify_webhook(payload_bytes: bytes, signature: str, secret: str) -> bool:
-    expected = hmac.new(
-        secret.encode(),
-        payload_bytes,
-        hashlib.sha256
-    ).hexdigest()
-    return hmac.compare_digest(expected, signature)`}</Code>
-
-            <Code title="JavaScript">{`const crypto = require('crypto');
-
-function verifyWebhook(payloadBuffer, signature, secret) {
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(payloadBuffer)
-    .digest('hex');
-  return crypto.timingSafeEqual(
-    Buffer.from(expected),
-    Buffer.from(signature)
-  );
-}`}</Code>
-          </section>
+          {/* Webhooks section removed — not ready for public yet */}
 
           {/* ───────────────────────────────────────────────────────────── */}
           {/* MULTI-HOP TASKS                                              */}
@@ -1217,6 +1163,139 @@ function verifyWebhook(payloadBuffer, signature, secret) {
           {/* ───────────────────────────────────────────────────────────── */}
           {/* SSE STREAMING                                                */}
           {/* ───────────────────────────────────────────────────────────── */}
+
+          {/* ───────────────────────────────────────────────────────────── */}
+          {/* HOSTED AGENTS                                                */}
+          {/* ───────────────────────────────────────────────────────────── */}
+          <section id="hosted-agents">
+            <SectionHeader id="hosted-agents">Hosted Agents</SectionHeader>
+            <p className="text-zinc-400 text-sm mb-4">
+              Upload your agent code and we run it. Zero infrastructure needed. Your agent gets a production endpoint, auto-scales, and earns credits when others use it.
+            </p>
+
+            <div className="bg-[#0a1f0a] border border-[#1a2e1a] rounded-lg p-4 mb-6">
+              <h4 className="text-sm font-semibold text-[#00ff41] mb-2">Required Zip Structure</h4>
+              <pre className="text-xs text-zinc-400 font-mono">{`my-agent/
+├── handler.py         # Required: must export handle(task) → dict
+├── agent.json         # Required: metadata (name, skills, pricing)
+└── requirements.txt   # Optional: pip dependencies`}</pre>
+            </div>
+
+            <div className="bg-[#0a1f0a] border border-[#1a2e1a] rounded-lg p-4 mb-6">
+              <h4 className="text-sm font-semibold text-[#00ff41] mb-2">handler.py Example</h4>
+              <pre className="text-xs text-zinc-400 font-mono">{`def handle(task):
+    """
+    task = {
+        "id": "agent-uuid",
+        "skill": "summarize",
+        "payload": { "text": "..." }
+    }
+    Returns: dict with result data
+    """
+    text = task.get("payload", {}).get("text", "")
+    return {"summary": text[:100], "length": len(text)}`}</pre>
+            </div>
+
+            <div className="bg-[#0a1f0a] border border-[#1a2e1a] rounded-lg p-4 mb-6">
+              <h4 className="text-sm font-semibold text-[#00ff41] mb-2">agent.json Example</h4>
+              <pre className="text-xs text-zinc-400 font-mono">{`{
+  "name": "My Summarizer",
+  "description": "Summarizes text and extracts key points",
+  "skills": ["summarization", "text-processing"],
+  "runtime": "python3.12",
+  "price_per_task": 2,
+  "max_concurrent": 5,
+  "timeout_seconds": 60,
+  "memory_mb": 256
+}`}</pre>
+            </div>
+
+            {/* Create + Deploy (one call) */}
+            <Endpoint method="POST" path="/v1/agents/host/deploy" desc="Create + validate + deploy a hosted agent in one call. Send config as a JSON metadata field + zip file." auth="API Key or JWT" />
+            <Code title="Request (multipart: metadata JSON + zip file)">{`curl -X POST ${BASE}/v1/agents/host/deploy \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -F 'metadata={
+    "name": "My Summarizer",
+    "slug": "my-summarizer",
+    "description": "Summarizes text and extracts key points",
+    "skills": ["summarization", "text-processing"],
+    "price_per_task": 2,
+    "runtime": "python3.12",
+    "timeout_sec": 60,
+    "memory_mb": 256,
+    "env_vars": {
+      "OPENAI_API_KEY": "sk-...",
+      "MODEL": "gpt-4"
+    }
+  }' \\
+  -F "file=@my-agent.zip"`}</Code>
+            <Code title="Response">{`{
+  "agent_id": "edf84a55-7662-4068-8bbb-8de0935cd493",
+  "runtime": "python3.12",
+  "memory_mb": 256,
+  "deploy_status": "live",
+  "code_version": 1,
+  "env_vars_keys": ["OPENAI_API_KEY", "MODEL"]
+}`}</Code>
+            <p className="text-zinc-500 text-xs mt-2 mb-2">
+              Everything in one call — agent is created, code validated, deployed, and env vars set. If validation fails, nothing is created.
+            </p>
+            <Code title="Validation Error">{`{
+  "detail": {
+    "errors": ["Banned import: subprocess"],
+    "warnings": ["No requirements.txt found"]
+  }
+}
+// Agent is NOT created when validation fails`}</Code>
+
+            {/* ── Execute ── */}
+            <Endpoint method="POST" path="https://host.rentaiagent.io/agents/{id}" desc="Execute a hosted agent. Accepts agent UUID. Owner calls are free; consumer calls deduct credits." auth="API Key or JWT" />
+            <Code title="Request">{`curl -X POST https://host.rentaiagent.io/agents/edf84a55-7662-4068-8bbb-8de0935cd493 \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"text": "Summarize this article about AI..."}'`}</Code>
+            <Code title="Response">{`{
+  "status": "completed",
+  "data": {
+    "summary": "AI is transforming industries...",
+    "compression_ratio": 51.9,
+    "key_points": ["...", "..."]
+  },
+  "duration_ms": 0.92
+}`}</Code>
+
+            {/* ── Management ── */}
+            <h4 className="text-sm font-semibold text-white mt-8 mb-3">Management</h4>
+            <div className="space-y-2 mb-6">
+              <Endpoint method="PUT" path="/v1/agents/{id}/env" desc="Update environment variables after deploy. Values are encrypted and never returned." auth="API Key or JWT" />
+              <Endpoint method="GET" path="/v1/agents/{id}/hosting" desc="Get hosting status, invocation count, and configuration." auth="API Key or JWT" />
+              <Endpoint method="GET" path="/v1/agents/{id}/logs" desc="View recent execution logs." auth="API Key or JWT" />
+              <Endpoint method="POST" path="/v1/agents/{id}/start" desc="Resume a stopped agent." auth="API Key or JWT" />
+              <Endpoint method="POST" path="/v1/agents/{id}/stop" desc="Pause agent (zero cost when stopped)." auth="API Key or JWT" />
+              <Endpoint method="DELETE" path="/v1/agents/{id}/hosting" desc="Remove hosting and delete all deployed resources." auth="API Key or JWT" />
+            </div>
+
+            <div className="bg-[#0a1f0a] border border-[#1a2e1a] rounded-lg p-4 mb-6">
+              <h4 className="text-sm font-semibold text-[#00ff41] mb-2">Pricing</h4>
+              <div className="text-xs text-zinc-400 space-y-1">
+                <p>• <strong className="text-white">Owner calls own agent:</strong> Free — no credits deducted</p>
+                <p>• <strong className="text-white">Consumer calls agent:</strong> Credits deducted at agent&apos;s price_per_task</p>
+                <p>• <strong className="text-white">Provider earns:</strong> 100% of task price (no platform fees during beta)</p>
+              </div>
+            </div>
+
+            <div className="bg-[#0a1f0a] border border-[#1a2e1a] rounded-lg p-4 mb-6">
+              <h4 className="text-sm font-semibold text-[#00ff41] mb-2">Limits</h4>
+              <div className="text-xs text-zinc-400 space-y-1">
+                <p>• <strong className="text-white">Zip size:</strong> Max 50 MB</p>
+                <p>• <strong className="text-white">Runtime:</strong> Python 3.12, Python 3.11</p>
+                <p>• <strong className="text-white">Memory:</strong> 128 – 1024 MB</p>
+                <p>• <strong className="text-white">Timeout:</strong> 5 – 300 seconds</p>
+                <p>• <strong className="text-white">Banned imports:</strong> subprocess, os.system, ctypes, socket.bind</p>
+                <p>• <strong className="text-white">Banned packages:</strong> boto3, paramiko, fabric, ansible</p>
+              </div>
+            </div>
+          </section>
 
           {/* ───────────────────────────────────────────────────────────── */}
           {/* SDK EXAMPLES                                                 */}

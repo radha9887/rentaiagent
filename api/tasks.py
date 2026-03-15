@@ -116,7 +116,9 @@ async def auto_create_task(data: AutoTaskCreate, user: User = Depends(get_curren
     from core.auto_select import select_ranked_agents
     from core.routing import route_task_with_failover
 
-    ranked = await select_ranked_agents(db, data.skill_requested, data.preferences)
+    # Use RAG search if description provided (natural language query)
+    rag_query = data.description if data.description else None
+    ranked = await select_ranked_agents(db, data.skill_requested, data.preferences, query=rag_query)
     if not ranked:
         raise NotFoundError("No available agent for this skill")
 

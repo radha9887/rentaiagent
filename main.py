@@ -57,6 +57,10 @@ app.include_router(developers_router)
 from api.stats import router as stats_router
 app.include_router(stats_router)
 
+# Hosting
+from api.hosting import router as hosting_router
+app.include_router(hosting_router)
+
 
 @app.get("/health")
 async def health():

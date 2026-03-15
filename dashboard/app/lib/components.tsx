@@ -160,6 +160,7 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/agents", label: "Browse" },
+    { href: "/agents/host", label: "☁ Host" },
     { href: "/tasks", label: "Transactions" },
     { href: "/docs", label: "Docs" },
     { href: "/developers", label: "Developers" },

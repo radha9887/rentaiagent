@@ -238,21 +238,28 @@ async def _handle_agent_discover(db: AsyncSession, params: dict) -> dict:
 
     Params:
         skill: Optional skill to filter by.
+        query: Optional natural language search query.
         limit: Max results (default 10).
 
     Returns:
         List of agent card summaries from both internal and external agents.
     """
     skill = params.get("skill")
+    q = params.get("query")
     limit = min(params.get("limit", 10), 50)
 
-    # Search internal agents
-    query = select(Agent).where(Agent.status == "online")
-    if skill:
-        from models.agent import AgentSkill
-        query = query.join(AgentSkill).where(AgentSkill.skill_tag.ilike(f"%{skill}%"))
-    query = query.limit(limit)
-    internal = (await db.execute(query)).scalars().all()
+    # Use RAG search for natural language queries
+    if q:
+        from core.matching import search_agents_rag
+        internal = await search_agents_rag(db, q, limit=limit)
+    else:
+        # Tag-based search
+        query_obj = select(Agent).where(Agent.status == "online")
+        if skill:
+            from models.agent import AgentSkill
+            query_obj = query_obj.join(AgentSkill).where(AgentSkill.skill_tag.ilike(f"%{skill}%"))
+        query_obj = query_obj.limit(limit)
+        internal = (await db.execute(query_obj)).scalars().all()
 
     # Search external agents
     ext_query = select(ExternalAgent).where(

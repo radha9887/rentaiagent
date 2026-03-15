@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.escrow import hold_credits
-from core.matching import build_agent_search_query
+from core.matching import build_agent_search_query, search_agents_rag
 from core.routing import route_task
 from models.agent import Agent, AgentSkill
 from models.rating import Rating, AgentStats
@@ -62,20 +62,30 @@ async def execute_tool(name: str, params: dict, user_id: uuid.UUID, db: AsyncSes
             "min_rating": {"type": "number", "description": "Minimum average rating (1.0-5.0)"},
             "limit": {"type": "integer", "description": "Max results to return (default 5, max 20)", "default": 5, "maximum": 20},
         },
-        "required": ["skill"],
+        "required": [],
     },
 )
 async def _search_agents(params: dict, user_id: uuid.UUID, db: AsyncSession) -> dict:
     limit = min(params.get("limit", 5), 20)
-    query = build_agent_search_query(
-        skill=params["skill"],
-        q=params.get("query"),
-        max_price=params.get("max_price"),
-        min_rating=params.get("min_rating"),
-    )
-    query = query.limit(limit)
-    result = await db.execute(query)
-    agents = result.scalars().unique().all()
+    q = params.get("query")
+
+    # Use RAG search for natural language queries
+    if q:
+        agents = await search_agents_rag(
+            db, q,
+            max_price=params.get("max_price"),
+            min_rating=params.get("min_rating"),
+            limit=limit,
+        )
+    else:
+        query = build_agent_search_query(
+            skill=params.get("skill"),
+            max_price=params.get("max_price"),
+            min_rating=params.get("min_rating"),
+        )
+        query = query.limit(limit)
+        result = await db.execute(query)
+        agents = result.scalars().unique().all()
 
     return {
         "agents": [
@@ -282,12 +292,13 @@ async def _rate_agent(params: dict, user_id: uuid.UUID, db: AsyncSession) -> dic
     schema={
         "type": "object",
         "properties": {
-            "skill": {"type": "string", "description": "Skill needed (e.g. 'summarize', 'translate')"},
+            "skill": {"type": "string", "description": "Skill tag (e.g. 'summarization')"},
+            "query": {"type": "string", "description": "Natural language description of what you need (e.g. 'summarize my research paper')"},
             "payload": {"type": "object", "description": "Task payload"},
             "priority": {"type": "string", "enum": ["balanced", "quality", "speed", "price"], "description": "What to optimize for"},
             "max_price": {"type": "number", "description": "Maximum price willing to pay"},
         },
-        "required": ["skill"],
+        "required": [],
     },
 )
 async def _hire_best_agent(params: dict, user_id: uuid.UUID, db: AsyncSession) -> dict:
@@ -300,9 +311,25 @@ async def _hire_best_agent(params: dict, user_id: uuid.UUID, db: AsyncSession) -
     if params.get("max_price") is not None:
         preferences["max_price"] = params["max_price"]
 
-    ranked = await select_ranked_agents(db, params["skill"], preferences)
+    query = params.get("query")
+    skill = params.get("skill")
+
+    if not query and not skill:
+        raise ValueError("Provide either 'skill' or 'query' parameter")
+
+    # Use RAG search for natural language, tag-based for exact skill
+    if query:
+        ranked = await search_agents_rag(
+            db, query,
+            max_price=params.get("max_price"),
+            priority=preferences.get("priority", "balanced"),
+            limit=5,
+        )
+    else:
+        ranked = await select_ranked_agents(db, skill, preferences)
+
     if not ranked:
-        raise ValueError(f"No available agent for skill '{params['skill']}'")
+        raise ValueError(f"No available agent found for '{query or skill}'")
 
     best = ranked[0]
     quoted_price = Decimal(str(best.price_per_task))
@@ -312,8 +339,8 @@ async def _hire_best_agent(params: dict, user_id: uuid.UUID, db: AsyncSession) -
         id=uuid.uuid4(),
         requester_user_id=user_id,
         provider_agent_id=best.id,
-        skill_requested=params["skill"],
-        description=f"Auto-selected agent for {params['skill']}",
+        skill_requested=skill or "auto",
+        description=query or f"Auto-selected agent for {skill}",
         payload=params.get("payload"),
         max_wait_seconds=300,
         quoted_price=quoted_price,

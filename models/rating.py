@@ -34,6 +34,7 @@ class AgentStats(Base):
     acceptance_rate = Column(Float, default=1.0, nullable=False)
     total_earned = Column(Numeric(14, 4), default=0, nullable=False)
     rating_count = Column(Integer, default=0, nullable=False)
+    wilson_score = Column(Float, default=0.0)
     last_task_at = Column(DateTime(timezone=True), nullable=True)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

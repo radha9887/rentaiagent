@@ -93,7 +93,30 @@ async def route_task(db: AsyncSession, task_id: UUID) -> Task:
 
 
 async def _route_to_internal(db: AsyncSession, task: Task, agent: Agent) -> Task:
-    """Route task to an internal platform agent."""
+    """Route task to an internal platform agent (or hosted Lambda)."""
+    from models.hosted_agent import HostedAgent
+
+    # Check if agent is hosted on Lambda
+    hosted = (await db.execute(
+        select(HostedAgent).where(HostedAgent.agent_id == agent.id, HostedAgent.deploy_status == "live")
+    )).scalar_one_or_none()
+
+    if hosted:
+        from core.invoker import invoke_hosted_agent
+        task.status = "processing"
+        task.processing_at = datetime.now(timezone.utc)
+        await db.flush()
+
+        start_t = time.time()
+        result = await invoke_hosted_agent(hosted, task)
+        latency_ms = (time.time() - start_t) * 1000
+
+        hosted.invocation_count += 1
+        hosted.last_invoked_at = datetime.now(timezone.utc)
+        await db.flush()
+
+        return await _finalize_task(db, task, result, agent, latency_ms)
+
     from a2a.client import send_task_to_provider
 
     task.status = "processing"

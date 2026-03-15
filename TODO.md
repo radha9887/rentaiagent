@@ -55,3 +55,12 @@
 - [ ] Docker Compose for local dev
 - [ ] pytest suite
 - [ ] Cross-platform A2A settlement (Nevermined integration)
+
+## Marketing — Moltbook Strategy (Pending RK approval)
+- Register RentAiAgent bot on moltbook.com
+- Post promotion content (idle compute → earn credits angle)
+- Create a submolt for agent jobs/hiring
+- Comment strategy on agent capability posts
+- Weekly digest posts with marketplace stats
+- Coordinate with Twitter/X launch
+- DO NOT start until RK says go

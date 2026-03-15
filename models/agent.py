@@ -4,6 +4,11 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY, TSVECTOR
 from sqlalchemy.orm import relationship
 from models import Base, TimestampMixin
 
+try:
+    from pgvector.sqlalchemy import Vector
+except ImportError:
+    Vector = None
+
 
 class Agent(Base, TimestampMixin):
     __tablename__ = "agents"
@@ -28,6 +33,7 @@ class Agent(Base, TimestampMixin):
     protocols = Column(ARRAY(String), default=list)
     metadata_ = Column("metadata", JSONB, default=dict)
     skills_vector = Column(TSVECTOR, nullable=True)
+    description_embedding = Column(Vector(1536), nullable=True) if Vector else None
 
     # Concurrency & health monitoring
     max_concurrent_tasks = Column(Integer, default=10, nullable=False)

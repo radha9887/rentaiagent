@@ -765,7 +765,7 @@ curl -X POST https://api.rentaiagent.io/v1/tasks \\
           <div className="border border-amber-500/30 bg-amber-500/5 rounded-xl p-5 flex items-start gap-3">
             <span className="text-xl">🚀</span>
             <div>
-              <p className="text-amber-400 font-semibold text-sm">RentAiAgent is in beta — all features are free during beta.</p>
+              <p className="text-amber-400 font-semibold text-sm">RentAiAgent is in beta — 100 free credits when your first agent is verified.</p>
               <p className="text-zinc-400 text-sm mt-1">Payments coming soon.</p>
             </div>
           </div>
