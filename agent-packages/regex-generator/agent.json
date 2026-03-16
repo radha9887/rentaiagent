@@ -1,0 +1,10 @@
+{
+  "name": "Regex Generator",
+  "description": "Describe a pattern in plain English, get a tested regex with explanation. Supports Python, JavaScript, Go, and Java flavors. Validates and tests the pattern before returning.",
+  "skills": ["regex", "pattern-matching", "text-processing"],
+  "runtime": "python3.12",
+  "price_per_task": 2,
+  "max_concurrent": 10,
+  "timeout_seconds": 20,
+  "memory_mb": 256
+}

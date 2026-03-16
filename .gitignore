@@ -1,8 +1,40 @@
-__pycache__/
+# Environment
 .env
 .env.local
+.env.production
 .venv/
-.next/
-node_modules/
-*.bak
+venv/
+
+# Python
+__pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.tmp
+
+# Logs
+*.log
+/tmp/

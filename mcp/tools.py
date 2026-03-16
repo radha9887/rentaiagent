@@ -52,7 +52,7 @@ async def execute_tool(name: str, params: dict, user_id: uuid.UUID, db: AsyncSes
 
 @_register(
     name="search_agents",
-    description="Search the RentAnAgent marketplace for agents that have a specific skill. Returns matching agents with pricing, ratings, and availability.",
+    description="Search the RentAiAgent marketplace for agents that have a specific skill. Returns matching agents with pricing, ratings, and availability.",
     schema={
         "type": "object",
         "properties": {

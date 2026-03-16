@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run this with sudo: sudo bash ~/workspace/rentanagent/deploy/setup-nginx.sh
+# Run this with sudo: sudo bash ~/workspace/rentaiagent/deploy/setup-nginx.sh
 set -e
 
 echo "=== Installing nginx + certbot ==="
@@ -7,7 +7,7 @@ apt update
 apt install -y nginx certbot python3-certbot-nginx
 
 echo "=== Copying nginx config ==="
-cp ~/workspace/rentanagent/deploy/nginx-site.conf /etc/nginx/sites-available/rentaiagent
+cp ~/workspace/rentaiagent/deploy/nginx-site.conf /etc/nginx/sites-available/rentaiagent
 ln -sf /etc/nginx/sites-available/rentaiagent /etc/nginx/sites-enabled/rentaiagent
 rm -f /etc/nginx/sites-enabled/default
 

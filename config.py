@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/rentanagent"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/rentaiagent"
     REDIS_URL: str = "redis://localhost:6379/0"
     JWT_SECRET: str = ""  # Required: set via RAA_JWT_SECRET env var
     JWT_ALGORITHM: str = "HS256"

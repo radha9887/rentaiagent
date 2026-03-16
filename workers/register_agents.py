@@ -1,4 +1,4 @@
-"""Register all 15 worker agents via the RentAnAgent API."""
+"""Register all 15 worker agents via the RentAiAgent API."""
 import httpx
 import sys
 

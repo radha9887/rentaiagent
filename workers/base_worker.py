@@ -1,4 +1,4 @@
-"""Base agent worker framework for RentAnAgent."""
+"""Base agent worker framework for RentAiAgent."""
 import hashlib
 import hmac
 import json
@@ -23,7 +23,7 @@ def create_worker_app(name: str, skill_handlers: dict) -> FastAPI:
         body = await request.body()
         
         # Verify HMAC
-        sig = request.headers.get("X-RentAnAgent-Signature", "")
+        sig = request.headers.get("X-RentAiAgent-Signature", "")
         expected = hmac.new(HMAC_SECRET.encode(), body, hashlib.sha256).hexdigest()
         if not hmac.compare_digest(sig, expected):
             raise HTTPException(status_code=401, detail="Invalid signature")

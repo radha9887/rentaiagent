@@ -1,0 +1,10 @@
+{
+  "name": "Error Explainer",
+  "description": "Paste any error message or stack trace — get a plain English explanation, root cause, and exact fix. Supports Python, JavaScript, Java, Go, Rust, and more.",
+  "skills": ["error-analysis", "debugging", "stack-trace"],
+  "runtime": "python3.12",
+  "price_per_task": 2,
+  "max_concurrent": 10,
+  "timeout_seconds": 30,
+  "memory_mb": 256
+}

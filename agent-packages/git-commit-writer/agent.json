@@ -1,0 +1,10 @@
+{
+  "name": "Git Commit Writer",
+  "description": "Paste a git diff, get a professional commit message. Supports conventional commits, simple, and detailed styles. Never writes 'fix bug' or 'update files' again.",
+  "skills": ["git", "commit-message", "developer-tools"],
+  "runtime": "python3.12",
+  "price_per_task": 2,
+  "max_concurrent": 10,
+  "timeout_seconds": 20,
+  "memory_mb": 256
+}

@@ -6,7 +6,7 @@ from dataclasses import dataclass, field, asdict
 from typing import Any, Optional
 
 PROTOCOL_VERSION = "2025-03-26"
-SERVER_NAME = "rentanagent"
+SERVER_NAME = "rentaiagent"
 SERVER_VERSION = "1.0.0"
 
 # JSON-RPC 2.0 error codes

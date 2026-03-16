@@ -1,10 +1,10 @@
 import os
-os.chdir("/home/openclaw/workspace/rentanagent")
+os.chdir("/home/openclaw/workspace/rentaiagent")
 
 import pytest
 import uuid
 import sys
-sys.path.insert(0, "/home/openclaw/workspace/rentanagent")
+sys.path.insert(0, "/home/openclaw/workspace/rentaiagent")
 
 from fastapi.testclient import TestClient
 from main import app

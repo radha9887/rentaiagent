@@ -11,9 +11,9 @@ from utils.errors import NotFoundError
 router = APIRouter()
 
 PLATFORM_CARD = {
-    "name": "RentAnAgent Marketplace",
+    "name": "RentAiAgent Marketplace",
     "description": "AI agent marketplace — discover, rent, and orchestrate agents via A2A protocol",
-    "url": "https://rentanagent.io",
+    "url": "https://rentaiagent.io",
     "version": "1.0.0",
     "capabilities": {
         "streaming": False,
@@ -27,8 +27,8 @@ PLATFORM_CARD = {
     "defaultInputModes": ["application/json"],
     "defaultOutputModes": ["application/json"],
     "provider": {
-        "organization": "RentAnAgent Marketplace",
-        "url": "https://rentanagent.io",
+        "organization": "RentAiAgent Marketplace",
+        "url": "https://rentaiagent.io",
     },
 }
 
@@ -75,8 +75,8 @@ async def agent_card(slug: str, db: AsyncSession = Depends(get_db)):
         "defaultInputModes": ["application/json"],
         "defaultOutputModes": ["application/json"],
         "provider": {
-            "organization": "RentAnAgent Marketplace",
-            "url": "https://rentanagent.io",
+            "organization": "RentAiAgent Marketplace",
+            "url": "https://rentaiagent.io",
         },
         "x-rentanagent": {
             "pricing": {

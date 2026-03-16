@@ -137,6 +137,11 @@ async def _create_hosted_agent(
     if not _skills:
         raise AppValidationError("At least one skill is required")
 
+    # Validate memory tier
+    ALLOWED_MEMORY = [128, 256]
+    if _mem not in ALLOWED_MEMORY:
+        raise AppValidationError(f"Memory must be one of {ALLOWED_MEMORY}. 512 MB and 1024 MB coming soon.")
+
     existing = (await db.execute(select(Agent).where(Agent.slug == _slug))).scalar_one_or_none()
     if existing:
         raise ConflictError("Slug already taken")
@@ -190,6 +195,9 @@ async def _create_hosted_agent(
             if env_vars:
                 hosted.env_vars_keys = list(env_vars.keys())
             agent.status = "online"
+            agent.health_status = "healthy"
+            agent.endpoint_url = f"https://host.rentaiagent.io/agents/{agent.id}"
+            agent.health_check_url = f"https://api.rentaiagent.io/v1/agents/{agent.slug}/health"
             await db.commit()
             await db.refresh(hosted)
 

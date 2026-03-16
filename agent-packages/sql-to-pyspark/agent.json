@@ -1,0 +1,10 @@
+{
+  "name": "SQL to PySpark",
+  "description": "Converts SQL queries to PySpark DataFrame API or Spark SQL code. Handles joins, window functions, CTEs, aggregations, and complex transformations. Perfect for data engineers migrating pipelines.",
+  "skills": ["sql-to-pyspark", "code-conversion", "data-engineering"],
+  "runtime": "python3.12",
+  "price_per_task": 3,
+  "max_concurrent": 10,
+  "timeout_seconds": 30,
+  "memory_mb": 256
+}

@@ -38,6 +38,7 @@ interface LogEntry {
 }
 
 const STATUS_COLORS: Record<string, string> = {
+  live: "bg-emerald-400",
   running: "bg-emerald-400",
   stopped: "bg-red-400",
   pending: "bg-yellow-400",
@@ -47,6 +48,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_TEXT_COLORS: Record<string, string> = {
+  live: "text-emerald-400",
   running: "text-emerald-400",
   stopped: "text-red-400",
   pending: "text-yellow-400",
@@ -189,7 +191,7 @@ function CreateHostedAgentForm({ onCreated }: { onCreated: (agent: HostedAgent) 
           <Select label="Runtime" value={form.runtime} onChange={set("runtime")}
             options={[{ value: "python3.12", label: "Python 3.12" }, { value: "python3.11", label: "Python 3.11" }]} />
           <Select label="Memory" value={form.memory_mb} onChange={set("memory_mb")}
-            options={[{ value: "128", label: "128 MB" }, { value: "256", label: "256 MB" }, { value: "512", label: "512 MB" }, { value: "1024", label: "1024 MB" }]} />
+            options={[{ value: "128", label: "128 MB — Standard" }, { value: "256", label: "256 MB — Pro" }, { value: "512", label: "512 MB — Coming Soon", disabled: true }, { value: "1024", label: "1024 MB — Coming Soon", disabled: true }]} />
         </div>
         <div>
           <label className="block text-sm text-zinc-400 mb-1.5">Timeout: {form.timeout_seconds}s</label>
@@ -491,7 +493,7 @@ function HostedAgentCard({ agent, onRefresh, autoExpand }: { agent: HostedAgent;
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[#00ff41] text-sm">☁</span>
+              <span className="text-[#00ff41] text-sm">⚡</span>
               <span className="text-white font-semibold">{agent.name}</span>
               <StatusDot status={status} />
             </div>
@@ -499,12 +501,12 @@ function HostedAgentCard({ agent, onRefresh, autoExpand }: { agent: HostedAgent;
             {agent.description && <p className="text-xs text-zinc-400 mt-2 line-clamp-2">{agent.description}</p>}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            {status !== "running" && (
+            {status !== "running" && status !== "live" && (
               <Button variant="secondary" onClick={() => action("start")} disabled={!!actionLoading} className="!px-2 !py-1 !text-xs">
                 {actionLoading === "start" ? "..." : "▶ Start"}
               </Button>
             )}
-            {status === "running" && (
+            {(status === "running" || status === "live") && (
               <Button variant="secondary" onClick={() => action("stop")} disabled={!!actionLoading} className="!px-2 !py-1 !text-xs">
                 {actionLoading === "stop" ? "..." : "■ Stop"}
               </Button>

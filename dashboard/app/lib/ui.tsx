@@ -89,7 +89,7 @@ export function Textarea({
 
 export function Select({
   label, options, ...props
-}: { label?: string; options: { value: string; label: string }[] } & React.SelectHTMLAttributes<HTMLSelectElement>) {
+}: { label?: string; options: { value: string; label: string; disabled?: boolean }[] } & React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <div>
       {label && <label className="block text-sm text-zinc-400 mb-1.5">{label}</label>}
@@ -98,7 +98,7 @@ export function Select({
         className={`w-full bg-[#0a0f0a] border border-[#1a2e1a] rounded-lg px-3 py-2 text-sm text-[#00ff41] font-mono focus:outline-none focus:ring-1 focus:ring-[#00ff41]/50 focus:border-[#00ff41] ${props.className || ""}`}
       >
         {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
+          <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>
         ))}
       </select>
     </div>

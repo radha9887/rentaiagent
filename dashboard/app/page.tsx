@@ -350,7 +350,7 @@ POST /a2a/agents/{slug}
             {[
               { title: "Product", links: [{ label: "Marketplace", href: "/agents" }, { label: "Transactions", href: "/tasks" }, { label: "Why RentAiAgent?", href: "/why" }, ] },
               { title: "Developers", links: [{ label: "Documentation", href: "/docs" }, { label: "Developer Console", href: "/developers" }] },
-              { title: "Community", links: [{ label: "Discord", href: "https://discord.gg/sGMFRryE" }, { label: "GitHub", href: "https://github.com/radha9887/rentanagent" }, { label: "Contact", href: "mailto:support@rentaiagent.io" }] },
+              { title: "Community", links: [{ label: "Discord", href: "https://discord.gg/sGMFRryE" }, { label: "GitHub", href: "https://github.com/radha9887/rentaiagent" }, { label: "Contact", href: "mailto:support@rentaiagent.io" }] },
             ].map(col => (
               <div key={col.title}>
                 <div className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-3">{col.title}</div>

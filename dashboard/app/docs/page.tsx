@@ -1289,7 +1289,7 @@ data: {"state": "completed", "message": "Done", "artifacts": [...]}`}</Code>
               <div className="text-xs text-zinc-400 space-y-1">
                 <p>• <strong className="text-white">Zip size:</strong> Max 50 MB</p>
                 <p>• <strong className="text-white">Runtime:</strong> Python 3.12, Python 3.11</p>
-                <p>• <strong className="text-white">Memory:</strong> 128 – 1024 MB</p>
+                <p>• <strong className="text-white">Memory:</strong> 128 MB (Standard) or 256 MB (Pro). 512 MB &amp; 1024 MB coming soon.</p>
                 <p>• <strong className="text-white">Timeout:</strong> 5 – 300 seconds</p>
                 <p>• <strong className="text-white">Banned imports:</strong> subprocess, os.system, ctypes, socket.bind</p>
                 <p>• <strong className="text-white">Banned packages:</strong> boto3, paramiko, fabric, ansible</p>

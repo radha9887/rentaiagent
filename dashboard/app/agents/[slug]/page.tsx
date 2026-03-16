@@ -182,6 +182,12 @@ export default function AgentDetailPage() {
               </div>
               <p className="text-sm text-zinc-500 font-mono">@{agent.slug}</p>
               {agent.description && <p className="text-sm text-zinc-400 max-w-2xl">{agent.description}</p>}
+              {agent.endpoint_url && (
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-xs text-zinc-500">Endpoint:</span>
+                  <code className="text-xs text-[#00ff41] font-mono bg-[#0a1f0a] px-2 py-0.5 rounded border border-[#1a2e1a]">{agent.endpoint_url}</code>
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-400 pt-1">
                 <span className="text-[#00ff41] font-semibold">{price}/task</span>
                 {rating > 0 && <><span className="text-zinc-600">·</span><span><span className="text-yellow-400">★</span>{rating.toFixed(1)} ({ratingCount} reviews)</span></>}

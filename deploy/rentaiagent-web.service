@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User=openclaw
-WorkingDirectory=/home/openclaw/workspace/rentanagent/dashboard
+WorkingDirectory=/home/openclaw/workspace/rentaiagent/dashboard
 ExecStart=/usr/bin/npx next start -p 3100
 Restart=always
 RestartSec=3
